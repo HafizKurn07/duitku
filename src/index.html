@@ -1,0 +1,914 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Duitku - Catatan Keuangan</title>
+<meta name="description" content="Catat pemasukan, pengeluaran, dan target tabungan harianmu. Lengkap dengan analisis bulanan dan tahunan.">
+<meta name="theme-color" content="#F5F2FF">
+<meta name="color-scheme" content="light dark">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Duitku">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="preload" href="assets/fonts/plus-jakarta-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/app.css">
+<script>
+  /* Terapkan tema sebelum render agar tidak berkedip */
+  try {
+    var raw = localStorage.getItem('duitku.v1');
+    var dark = raw ? !!JSON.parse(raw).dark : window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (dark) document.documentElement.classList.add('dark');
+  } catch (e) {}
+</script>
+<script defer src="assets/finance.js"></script>
+<script defer src="assets/backup.js"></script>
+<script defer src="assets/wallets.js"></script>
+<script defer src="assets/app.js"></script>
+</head>
+
+<body class="bg-canvas dark:bg-night text-ink dark:text-white font-sans antialiased">
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><symbol id="i-house" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" /> <path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></symbol><symbol id="i-receipt-text" viewBox="0 0 24 24"><path d="M13 16H8" /> <path d="M14 8H8" /> <path d="M16 12H8" /> <path d="M4 3a1 1 0 0 1 1-1 1.3 1.3 0 0 1 .7.2l.933.6a1.3 1.3 0 0 0 1.4 0l.934-.6a1.3 1.3 0 0 1 1.4 0l.933.6a1.3 1.3 0 0 0 1.4 0l.933-.6a1.3 1.3 0 0 1 1.4 0l.934.6a1.3 1.3 0 0 0 1.4 0l.933-.6A1.3 1.3 0 0 1 19 2a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1 1.3 1.3 0 0 1-.7-.2l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.934.6a1.3 1.3 0 0 1-1.4 0l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-1.4 0l-.934-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-.7.2 1 1 0 0 1-1-1z" /></symbol><symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <circle cx="12" cy="12" r="6" /> <circle cx="12" cy="12" r="2" /></symbol><symbol id="i-chart-no-axes-column" viewBox="0 0 24 24"><path d="M5 21v-6" /> <path d="M12 21V3" /> <path d="M19 21V9" /></symbol><symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14" /> <path d="M12 5v14" /></symbol><symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></symbol><symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></symbol><symbol id="i-arrow-down-left" viewBox="0 0 24 24"><path d="M17 7 7 17" /> <path d="M17 17H7V7" /></symbol><symbol id="i-arrow-up-right" viewBox="0 0 24 24"><path d="M7 7h10v10" /> <path d="M7 17 17 7" /></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18" /> <path d="m6 6 12 12" /></symbol><symbol id="i-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34" /> <circle cx="11" cy="11" r="8" /></symbol><symbol id="i-pencil" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /> <path d="m15 5 4 4" /></symbol><symbol id="i-settings" viewBox="0 0 24 24"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" /> <circle cx="12" cy="12" r="3" /></symbol><symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" /> <circle cx="12" cy="12" r="3" /></symbol><symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49" /> <path d="M14.084 14.158a3 3 0 0 1-4.242-4.242" /> <path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143" /> <path d="m2 2 20 20" /></symbol><symbol id="i-wallet" viewBox="0 0 24 24"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" /> <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" /></symbol><symbol id="i-tags" viewBox="0 0 24 24"><path d="M13.172 2a2 2 0 0 1 1.414.586l6.71 6.71a2.4 2.4 0 0 1 0 3.408l-4.592 4.592a2.4 2.4 0 0 1-3.408 0l-6.71-6.71A2 2 0 0 1 6 9.172V3a1 1 0 0 1 1-1z" /> <path d="M2 7v6.172a2 2 0 0 0 .586 1.414l6.71 6.71a2.4 2.4 0 0 0 3.191.193" /> <circle cx="10.5" cy="6.5" r=".5" fill="currentColor" /></symbol><symbol id="i-download" viewBox="0 0 24 24"><path d="M12 15V3" /> <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /> <path d="m7 10 5 5 5-5" /></symbol><symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 3v12" /> <path d="m17 8-5-5-5 5" /> <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /></symbol><symbol id="i-trash-2" viewBox="0 0 24 24"><path d="M10 11v6" /> <path d="M14 11v6" /> <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /> <path d="M3 6h18" /> <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></symbol><symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401" /></symbol><symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" /> <path d="M12 2v2" /> <path d="M12 20v2" /> <path d="m4.93 4.93 1.41 1.41" /> <path d="m17.66 17.66 1.41 1.41" /> <path d="M2 12h2" /> <path d="M20 12h2" /> <path d="m6.34 17.66-1.41 1.41" /> <path d="m19.07 4.93-1.41 1.41" /></symbol><symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z" /> <path d="M20 2v4" /> <path d="M22 4h-4" /> <circle cx="4" cy="20" r="2" /></symbol><symbol id="i-trending-up" viewBox="0 0 24 24"><path d="M16 7h6v6" /> <path d="m22 7-8.5 8.5-5-5L2 17" /></symbol><symbol id="i-trending-down" viewBox="0 0 24 24"><path d="M16 17h6v-6" /> <path d="m22 17-8.5-8.5-5 5L2 7" /></symbol><symbol id="i-piggy-bank" viewBox="0 0 24 24"><path d="M11 17h3v2a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-3a3.16 3.16 0 0 0 2-2h1a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1h-1a5 5 0 0 0-2-4V3a4 4 0 0 0-3.2 1.6l-.3.4H11a6 6 0 0 0-6 6v1a5 5 0 0 0 2 4v3a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1z" /> <path d="M16 10h.01" /> <path d="M2 8v1a2 2 0 0 0 2 2h1" /></symbol><symbol id="i-calendar-days" viewBox="0 0 24 24"><path d="M8 2v3" /> <path d="M16 2v3" /> <rect x="3" y="3" width="18" height="18" rx="2" /> <path d="M3 9h18" /> <path d="M8 13h.01" /> <path d="M12 13h.01" /> <path d="M16 13h.01" /> <path d="M8 17h.01" /> <path d="M12 17h.01" /> <path d="M16 17h.01" /></symbol><symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4" /></symbol><symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <path d="M12 16v-4" /> <path d="M12 8h.01" /></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol><symbol id="i-triangle-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /> <path d="M12 9v4" /> <path d="M12 17h.01" /></symbol><symbol id="i-file-spreadsheet" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" /> <path d="M14 2v5a1 1 0 0 0 1 1h5" /> <path d="M8 13h2" /> <path d="M14 13h2" /> <path d="M8 17h2" /> <path d="M14 17h2" /></symbol><symbol id="i-coins" viewBox="0 0 24 24"><path d="M13.744 17.736a6 6 0 1 1-7.48-7.48" /> <path d="M15 6h1v4" /> <path d="m6.134 14.768.866-.5 2 3.464" /> <circle cx="16" cy="8" r="6" /></symbol><symbol id="i-chart-pie" viewBox="0 0 24 24"><path d="M21 12c.552 0 1.005-.449.95-.998a10 10 0 0 0-8.953-8.951c-.55-.055-.998.398-.998.95v8a1 1 0 0 0 1 1z" /> <path d="M21.21 15.89A10 10 0 1 1 8 2.83" /></symbol><symbol id="i-receipt" viewBox="0 0 24 24"><path d="M12 17V7" /> <path d="M16 8h-6a2 2 0 0 0 0 4h4a2 2 0 0 1 0 4H8" /> <path d="M4 3a1 1 0 0 1 1-1 1.3 1.3 0 0 1 .7.2l.933.6a1.3 1.3 0 0 0 1.4 0l.934-.6a1.3 1.3 0 0 1 1.4 0l.933.6a1.3 1.3 0 0 0 1.4 0l.933-.6a1.3 1.3 0 0 1 1.4 0l.934.6a1.3 1.3 0 0 0 1.4 0l.933-.6A1.3 1.3 0 0 1 19 2a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1 1.3 1.3 0 0 1-.7-.2l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.934.6a1.3 1.3 0 0 1-1.4 0l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-1.4 0l-.934-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-.7.2 1 1 0 0 1-1-1z" /></symbol><symbol id="i-user-round" viewBox="0 0 24 24"><circle cx="12" cy="8" r="5" /> <path d="M20 21a8 8 0 0 0-16 0" /></symbol><symbol id="i-shield-check" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /> <path d="m9 12 2 2 4-4" /></symbol><symbol id="i-lightbulb" viewBox="0 0 24 24"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" /> <path d="M9 18h6" /> <path d="M10 22h4" /></symbol><symbol id="i-calendar-check" viewBox="0 0 24 24"><path d="M8 2v3" /> <path d="M16 2v3" /> <rect x="3" y="3" width="18" height="18" rx="2" /> <path d="M3 9h18" /> <path d="m9 15 2 2 4-4" /></symbol><symbol id="i-crown" viewBox="0 0 24 24"><path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z" /> <path d="M5 21h14" /></symbol></svg>
+
+<div class="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+  <div class="absolute -top-28 -left-24 w-80 h-80 rounded-full bg-brand/20 blur-3xl"></div>
+  <div class="absolute top-1/3 -right-28 w-72 h-72 rounded-full bg-pop/15 blur-3xl"></div>
+</div>
+
+<noscript><p class="p-6 text-center font-semibold">Duitku membutuhkan JavaScript. Aktifkan JavaScript lalu muat ulang halaman.</p></noscript>
+
+<div x-data="app" x-cloak @keydown.escape.window="closeTop()" class="relative mx-auto max-w-md min-h-screen pb-[calc(9rem+env(safe-area-inset-bottom))]">
+
+  <!-- ===================== BERANDA ===================== -->
+  <template x-if="tab==='home'">
+  <main class="px-5 pt-[max(env(safe-area-inset-top),20px)] space-y-5">
+    <header class="flex items-center gap-3">
+      <div class="w-11 h-11 rounded-2xl grid place-items-center font-extrabold text-white shrink-0" style="background:linear-gradient(135deg,#7C5CFF,#FF5FA2)" aria-hidden="true" x-text="initial"></div>
+      <div class="min-w-0 flex-1">
+        <p class="text-xs font-medium opacity-60" x-text="greeting"></p>
+        <h1 class="text-xl font-extrabold leading-6 truncate" x-text="state.name"></h1>
+      </div>
+      <button class="iconbtn" @click="go('settings')" aria-label="Pengaturan"><svg class="ic"><use href="#i-settings"/></svg></button>
+    </header>
+
+    <!-- Kartu saldo -->
+    <section class="hero rounded-4xl p-5 text-white relative overflow-hidden shadow-float" aria-label="Ringkasan saldo">
+      <div class="absolute -right-12 -top-14 w-52 h-52 rounded-full bg-white/10"></div>
+      <div class="absolute right-10 -bottom-16 w-40 h-40 rounded-full bg-lime/30"></div>
+      <div class="relative">
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-1.5">
+            <p class="text-sm font-semibold text-white/85">Total saldo</p>
+            <button @click="toggleHide()" class="w-8 h-8 rounded-full grid place-items-center text-white/85 active:bg-white/20" :aria-label="state.hideBalance?'Tampilkan saldo':'Sembunyikan saldo'"><svg class="ic !w-[18px] !h-[18px]"><use :href="state.hideBalance?'#i-eye-off':'#i-eye'"/></svg></button>
+          </div>
+          <div class="monthpill glass">
+            <button @click="shift(-1)" aria-label="Bulan sebelumnya"><svg class="ic !w-4 !h-4"><use href="#i-chevron-left"/></svg></button>
+            <span x-text="monthLabel"></span>
+            <button @click="shift(1)" aria-label="Bulan berikutnya"><svg class="ic !w-4 !h-4"><use href="#i-chevron-right"/></svg></button>
+          </div>
+        </div>
+        <p class="text-[34px] leading-[44px] font-extrabold tracking-tight num mt-1 truncate" x-text="hide(rp(totalBalance))"></p>
+        <div class="grid grid-cols-2 gap-3 mt-5">
+          <div class="rounded-2xl bg-white/15 backdrop-blur px-3.5 py-3 min-w-0">
+            <div class="flex items-center gap-1.5 text-xs font-semibold text-white/85"><span class="w-5 h-5 rounded-full bg-white/25 grid place-items-center"><svg class="ic !w-3 !h-3"><use href="#i-arrow-down-left"/></svg></span>Masuk</div>
+            <p class="font-bold num text-[15px] mt-1 truncate" x-text="rp(mStats.income)"></p>
+          </div>
+          <div class="rounded-2xl bg-white/15 backdrop-blur px-3.5 py-3 min-w-0">
+            <div class="flex items-center gap-1.5 text-xs font-semibold text-white/85"><span class="w-5 h-5 rounded-full bg-white/25 grid place-items-center"><svg class="ic !w-3 !h-3"><use href="#i-arrow-up-right"/></svg></span>Keluar</div>
+            <p class="font-bold num text-[15px] mt-1 truncate" x-text="rp(mStats.expense)"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sisa bulan ini -->
+    <section class="card p-5 flex items-center gap-5" aria-label="Sisa bulan ini">
+      <div class="w-[88px] h-[88px] shrink-0 rounded-full grid place-items-center" :style="ringStyle(mStats.rate)">
+        <div class="w-[68px] h-[68px] rounded-full bg-white dark:bg-panel grid place-items-center text-center">
+          <div><p class="text-base font-extrabold num leading-5" x-text="rateText(mStats.rate)"></p><p class="text-[10px] opacity-60 leading-3">tersisa</p></div>
+        </div>
+      </div>
+      <div class="min-w-0 flex-1">
+        <p class="label">Sisa bulan ini</p>
+        <p class="text-xl font-extrabold num truncate" :class="mStats.net<0?'t-exp':''" x-text="hide(rp(mStats.net))"></p>
+        <p class="text-xs mt-1 opacity-70" x-text="rateMsg"></p>
+      </div>
+    </section>
+
+    <!-- Peringatan anggaran -->
+    <template x-for="b in budgetRows.filter(b=>b.pct>=80)" :key="b.cat.id">
+      <div class="rounded-2xl px-4 py-3 text-sm font-semibold flex items-center gap-3" role="status"
+           :class="b.pct>=100 ? 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300'">
+        <svg class="ic"><use href="#i-triangle-alert"/></svg>
+        <span x-text="b.pct>=100 ? `Anggaran ${b.cat.name} sudah lewat batas.` : `Anggaran ${b.cat.name} terpakai ${Math.round(b.pct)}%.`"></span>
+      </div>
+    </template>
+
+    <!-- Target -->
+    <section x-show="state.targets.length>0" aria-label="Target tabungan">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-bold">Target tabungan</h2>
+        <button class="text-xs font-bold text-brand-deep dark:text-[#B7A8FF]" @click="go('targets')">Lihat semua</button>
+      </div>
+      <div class="flex gap-3 overflow-x-auto no-scrollbar -mx-5 px-5 snap-x snap-mandatory">
+        <template x-for="t in state.targets" :key="t.id">
+          <button class="card snap-start shrink-0 w-[172px] p-4 text-left" @click="go('targets'); openDetail(t)">
+            <div class="flex items-center justify-between"><span class="text-2xl leading-none" x-text="t.emoji"></span><b class="text-xs num" x-text="Math.round(targetPct(t))+'%'"></b></div>
+            <p class="font-bold text-sm mt-3 truncate" x-text="t.name"></p>
+            <p class="text-[11px] opacity-60 num mt-0.5 truncate" x-text="hide(rp(targetSaved(t)))"></p>
+            <div class="bar mt-3"><div :style="`width:${targetPct(t)}%;background:${t.color}`"></div></div>
+          </button>
+        </template>
+      </div>
+    </section>
+
+    <!-- Kategori -->
+    <section class="card p-5" aria-label="Pengeluaran per kategori">
+      <h2 class="font-bold mb-4">Pengeluaran per kategori</h2>
+      <p x-show="catStats.length===0" class="text-sm opacity-60 py-4 text-center">Belum ada pengeluaran bulan ini.</p>
+      <div x-show="catStats.length>0" class="flex items-center gap-5">
+        <div class="w-32 h-32 rounded-full shrink-0 grid place-items-center" :style="`background:${donut}`">
+          <div class="w-[84px] h-[84px] rounded-full bg-white dark:bg-panel grid place-items-center text-center">
+            <div><p class="text-[10px] opacity-60 leading-3">Total</p><p class="text-xs font-extrabold leading-4 num" x-text="compact(mStats.expense)"></p></div>
+          </div>
+        </div>
+        <ul class="flex-1 space-y-2.5 min-w-0">
+          <template x-for="c in catStats.slice(0,5)" :key="c.cat.id">
+            <li class="flex items-center gap-2 text-xs">
+              <span class="w-2.5 h-2.5 rounded-full shrink-0" :style="`background:${c.cat.color}`"></span>
+              <span class="truncate flex-1" x-text="c.cat.emoji+' '+c.cat.name"></span>
+              <b class="num" x-text="Math.round(c.pct)+'%'"></b>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Tren 7 hari -->
+    <section class="card p-5" aria-label="Pengeluaran 7 hari">
+      <h2 class="font-bold mb-4">Pengeluaran 7 hari</h2>
+      <div class="grid grid-cols-7 gap-2">
+        <template x-for="d in trend" :key="d.key">
+          <div class="flex flex-col items-center gap-1.5">
+            <span class="text-[9px] opacity-60 h-3 leading-3 num" x-text="d.total? compact(d.total):''"></span>
+            <div class="h-20 w-full flex items-end"><div class="w-full rounded-lg c-sav" :class="d.isToday?'':'opacity-30'" :style="`height:${d.h}%`"></div></div>
+            <span class="text-[10px] opacity-60 h-3 leading-3" x-text="d.label"></span>
+          </div>
+        </template>
+      </div>
+    </section>
+
+    <!-- Transaksi terakhir -->
+    <section aria-label="Transaksi terakhir">
+      <div class="flex justify-between items-center mb-3">
+        <h2 class="font-bold">Transaksi terakhir</h2>
+        <button @click="go('tx')" class="text-xs font-bold text-brand-deep dark:text-[#B7A8FF]">Lihat semua</button>
+      </div>
+      <div class="space-y-2.5">
+        <template x-for="t in recentTx" :key="t.id">
+          <button type="button" @click="t.isTransferFee?null:openEdit(t)" class="card w-full flex items-center gap-3 p-3 text-left active:scale-[.985] transition-transform">
+            <span class="w-11 h-11 rounded-2xl grid place-items-center text-xl shrink-0" :style="t.type==='transfer'?'background:#8B7CFF20':`background:${catOf(t.categoryId).color}2E`" x-text="t.type==='transfer'?'↔':catOf(t.categoryId).emoji"></span>
+            <span class="flex-1 min-w-0">
+              <span class="block font-bold text-sm truncate" x-text="t.note || (t.type==='transfer'?'Transfer':catOf(t.categoryId).name)"></span>
+              <span class="block text-[11px] opacity-60 truncate" x-text="t.type==='transfer' ? walletOf(t.walletId).name+' → '+walletOf(t.toWalletId).name : catOf(t.categoryId).name+' · '+walletOf(t.walletId).name"></span>
+            </span>
+            <span class="font-extrabold text-sm num shrink-0" :class="t.type==='income'?'t-inc':t.type==='transfer'?'opacity-70':''" x-text="t.type==='transfer'?rp(t.amount):(t.type==='income'?'+':'-')+rp(t.amount)"></span>
+          </button>
+        </template>
+        <div x-show="recentTx.length===0" class="card p-6 text-center">
+          <div class="w-12 h-12 mx-auto rounded-2xl bg-brand/10 text-brand-deep dark:text-[#B7A8FF] grid place-items-center mb-3"><svg class="ic"><use href="#i-receipt-text"/></svg></div>
+          <p class="font-bold text-sm">Belum ada transaksi bulan ini</p>
+          <p class="text-xs opacity-60 mt-1">Tekan tombol + untuk mencatat pengeluaran atau pemasukan pertamamu.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+  </template>
+
+  <!-- ===================== TRANSAKSI ===================== -->
+  <template x-if="tab==='tx'">
+  <main class="px-5 pt-[max(env(safe-area-inset-top),20px)] space-y-4">
+    <header class="flex items-center justify-between gap-3 h-11">
+      <h1 class="text-[22px] font-extrabold">Transaksi</h1>
+      <div class="monthpill">
+        <button @click="shift(-1)" aria-label="Bulan sebelumnya"><svg class="ic !w-4 !h-4"><use href="#i-chevron-left"/></svg></button>
+        <span x-text="monthLabel"></span>
+        <button @click="shift(1)" aria-label="Bulan berikutnya"><svg class="ic !w-4 !h-4"><use href="#i-chevron-right"/></svg></button>
+      </div>
+    </header>
+    <div class="relative">
+      <svg class="ic !w-4 !h-4 absolute left-4 top-1/2 -translate-y-1/2 opacity-40 pointer-events-none"><use href="#i-search"/></svg>
+      <input x-model.debounce.200ms="search" @input="txPage=0" type="search" placeholder="Cari catatan atau kategori" aria-label="Cari transaksi" class="field field-on-card !pl-11 shadow-card">
+    </div>
+    <div class="flex gap-2 overflow-x-auto no-scrollbar">
+    <template x-for="f in [['all','Semua'],['expense','Keluar'],['income','Masuk'],['transfer','Transfer']]" :key="f[0]">
+        <button @click="typeFilter=f[0]; txPage=0" class="chip" :class="typeFilter===f[0]?'on':''" x-text="f[1]"></button>
+      </template>
+    </div>
+    <div class="grid grid-cols-2 gap-3 text-xs">
+      <div class="card px-4 py-3 flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full c-inc"></span><span class="opacity-60">Masuk</span><b class="num ml-auto" x-text="compact(filteredTotals.inc)"></b></div>
+      <div class="card px-4 py-3 flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full c-exp"></span><span class="opacity-60">Keluar</span><b class="num ml-auto" x-text="compact(filteredTotals.exp)"></b></div>
+    </div>
+
+    <template x-for="g in grouped" :key="g.date">
+      <section>
+        <div class="flex justify-between text-xs font-bold opacity-60 mb-2 px-1">
+          <h2 x-text="g.label"></h2><span class="num" x-text="(g.total<0?'-':'+')+rp(Math.abs(g.total))"></span>
+        </div>
+        <div class="space-y-2.5">
+          <template x-for="t in g.items" :key="t.id">
+            <button type="button" @click="t.isTransferFee?null:openEdit(t)" class="card w-full flex items-center gap-3 p-3 text-left active:scale-[.985] transition-transform">
+              <span class="w-11 h-11 rounded-2xl grid place-items-center text-xl shrink-0" :style="t.type==='transfer'?'background:#8B7CFF20':`background:${catOf(t.categoryId).color}2E`" x-text="t.type==='transfer'?'↔':catOf(t.categoryId).emoji"></span>
+              <span class="flex-1 min-w-0">
+                <span class="block font-bold text-sm truncate" x-text="t.note || (t.type==='transfer'?'Transfer':catOf(t.categoryId).name)"></span>
+                <span class="block text-[11px] opacity-60 truncate" x-text="t.type==='transfer' ? walletOf(t.walletId).name+' → '+walletOf(t.toWalletId).name+(t.feeAmount?' · biaya '+rp(t.feeAmount):'') : catOf(t.categoryId).name+' · '+walletOf(t.walletId).name"></span>
+              </span>
+              <span class="font-extrabold text-sm num shrink-0" :class="t.type==='income'?'t-inc':t.type==='transfer'?'opacity-70':''" x-text="t.type==='transfer'?rp(t.amount):(t.type==='income'?'+':'-')+rp(t.amount)"></span>
+            </button>
+          </template>
+        </div>
+      </section>
+    </template>
+    <div x-show="filteredTx.length>txPageSize" class="flex items-center justify-between gap-3">
+      <button type="button" class="btn btn-soft !w-auto" @click="previousTxPage()" :disabled="txPage===0">Sebelumnya</button>
+      <span class="text-xs opacity-60 text-center" x-text="`Halaman ${txPage+1} dari ${txPageCount}`"></span>
+      <button type="button" class="btn btn-soft !w-auto" @click="nextTxPage()" :disabled="txPage+1>=txPageCount">Berikutnya</button>
+    </div>
+    <div x-show="grouped.length===0" class="card p-6 text-center">
+      <div class="w-12 h-12 mx-auto rounded-2xl bg-brand/10 text-brand-deep dark:text-[#B7A8FF] grid place-items-center mb-3"><svg class="ic"><use href="#i-search"/></svg></div>
+      <p class="font-bold text-sm" x-text="search||typeFilter!=='all' ? 'Tidak ada transaksi yang cocok' : 'Belum ada transaksi bulan ini'"></p>
+      <p class="text-xs opacity-60 mt-1" x-text="search||typeFilter!=='all' ? 'Ubah kata kunci atau filter.' : 'Tekan tombol + untuk mencatat.'"></p>
+    </div>
+  </main>
+  </template>
+
+  <!-- ===================== TARGET ===================== -->
+  <template x-if="tab==='targets'">
+  <main class="px-5 pt-[max(env(safe-area-inset-top),20px)] space-y-5">
+    <header class="flex items-center justify-between gap-3 h-11">
+      <h1 class="text-[22px] font-extrabold">Target tabungan</h1>
+      <button @click="openTargetForm()" class="iconbtn !bg-brand !text-white" aria-label="Tambah target"><svg class="ic"><use href="#i-plus"/></svg></button>
+    </header>
+
+    <section class="rounded-4xl p-6 bg-lime text-ink relative overflow-hidden" aria-label="Total tabungan">
+      <div class="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-white/35"></div>
+      <div class="relative">
+        <p class="text-xs font-bold opacity-70">Total tertabung</p>
+        <p class="text-[30px] leading-9 font-extrabold mt-1 num truncate" x-text="hide(rp(totalSaved))"></p>
+        <p class="text-xs font-medium opacity-70 mt-1">dari total target <b class="num" x-text="rp(totalTarget)"></b></p>
+        <div class="h-2 rounded-full bg-ink/10 mt-4 overflow-hidden"><div class="h-full rounded-full bg-ink transition-all" :style="`width:${totalTarget? Math.min(100,totalSaved/totalTarget*100):0}%`"></div></div>
+      </div>
+    </section>
+
+    <div x-show="state.targets.length===0" class="card p-6 text-center">
+      <div class="w-12 h-12 mx-auto rounded-2xl bg-brand/10 text-brand-deep dark:text-[#B7A8FF] grid place-items-center mb-3"><svg class="ic"><use href="#i-piggy-bank"/></svg></div>
+      <p class="font-bold text-sm">Belum ada target</p>
+      <p class="text-xs opacity-60 mt-1 mb-4">Mulai dari dana darurat, liburan, atau dana pernikahan.</p>
+      <button class="btn btn-primary" @click="openTargetForm()">Buat target pertama</button>
+    </div>
+
+    <template x-for="t in state.targets" :key="t.id">
+      <article class="card p-4">
+        <button type="button" class="w-full flex items-center gap-4 text-left" @click="openDetail(t)">
+          <span class="w-16 h-16 rounded-full shrink-0 grid place-items-center" :style="ring(t)">
+            <span class="w-[52px] h-[52px] rounded-full bg-white dark:bg-panel grid place-items-center text-2xl" x-text="t.emoji"></span>
+          </span>
+          <span class="flex-1 min-w-0">
+            <span class="block font-bold truncate" x-text="t.name"></span>
+            <span class="block text-xs mt-0.5 num opacity-70 truncate"><span x-text="hide(rp(targetSaved(t)))"></span> dari <span x-text="rp(t.target)"></span></span>
+            <span class="block text-[11px] mt-1 font-semibold" :class="daysLeft(t)!==null && daysLeft(t)<0 && targetPct(t)<100 ? 't-exp' : 'opacity-60'" x-text="deadlineText(t)"></span>
+          </span>
+          <b class="text-sm num self-start" x-text="Math.round(targetPct(t))+'%'"></b>
+        </button>
+        <div class="bar mt-4"><div :style="`width:${targetPct(t)}%;background:${t.color}`"></div></div>
+        <div class="flex items-center justify-between gap-3 mt-4">
+          <p class="text-[11px] font-semibold opacity-70 min-w-0 truncate" x-text="needText(t)"></p>
+          <button @click="openContrib(t,'in')" class="h-9 px-4 rounded-full bg-brand text-white text-xs font-bold shrink-0 inline-flex items-center gap-1"><svg class="ic !w-3.5 !h-3.5"><use href="#i-plus"/></svg>Setor</button>
+        </div>
+      </article>
+    </template>
+  </main>
+  </template>
+
+  <!-- ===================== ANALISIS ===================== -->
+  <template x-if="tab==='report'">
+  <main class="px-5 pt-[max(env(safe-area-inset-top),20px)] space-y-5">
+    <header class="flex items-center justify-between gap-3 h-11">
+      <h1 class="text-[22px] font-extrabold">Analisis</h1>
+      <div class="monthpill" x-show="repMode==='month'">
+        <button @click="shift(-1)" aria-label="Bulan sebelumnya"><svg class="ic !w-4 !h-4"><use href="#i-chevron-left"/></svg></button>
+        <span x-text="monthLabel"></span>
+        <button @click="shift(1)" aria-label="Bulan berikutnya"><svg class="ic !w-4 !h-4"><use href="#i-chevron-right"/></svg></button>
+      </div>
+      <div class="monthpill" x-show="repMode==='year'">
+        <button @click="shiftYear(-1)" aria-label="Tahun sebelumnya"><svg class="ic !w-4 !h-4"><use href="#i-chevron-left"/></svg></button>
+        <span x-text="year"></span>
+        <button @click="shiftYear(1)" aria-label="Tahun berikutnya"><svg class="ic !w-4 !h-4"><use href="#i-chevron-right"/></svg></button>
+      </div>
+    </header>
+    <div class="seg" role="tablist" aria-label="Rentang analisis">
+      <button role="tab" :aria-selected="repMode==='day'" :class="repMode==='day'?'on':''" @click="repMode='day'">Harian</button>
+      <button role="tab" :aria-selected="repMode==='week'" :class="repMode==='week'?'on':''" @click="repMode='week'">Mingguan</button>
+      <button role="tab" :aria-selected="repMode==='month'" :class="repMode==='month'?'on':''" @click="repMode='month'">Bulanan</button>
+      <button role="tab" :aria-selected="repMode==='year'" :class="repMode==='year'?'on':''" @click="repMode='year'">Tahunan</button>
+    </div>
+
+    <template x-if="repMode==='day'||repMode==='week'">
+    <section class="card p-4 space-y-4" aria-label="Filter periode laporan">
+      <div class="flex items-center justify-between gap-2">
+        <button class="iconbtn !w-9 !h-9" @click="shiftReportDate(-1)" aria-label="Periode sebelumnya"><svg class="ic"><use href="#i-chevron-left"/></svg></button>
+        <p class="text-sm font-bold text-center" x-text="reportRangeLabel"></p>
+        <button class="iconbtn !w-9 !h-9" @click="shiftReportDate(1)" aria-label="Periode berikutnya"><svg class="ic"><use href="#i-chevron-right"/></svg></button>
+      </div>
+      <label class="sr-only" for="report-date">Pilih tanggal laporan</label>
+      <input id="report-date" type="date" x-model="reportDate" class="field field-on-card">
+      <div class="grid grid-cols-2 gap-3">
+        <div><p class="label">Pemasukan</p><p class="text-base font-extrabold num mt-1" x-text="rp(rangeStats.income)"></p></div>
+        <div><p class="label">Pengeluaran</p><p class="text-base font-extrabold num mt-1" x-text="rp(rangeStats.expense)"></p></div>
+        <div><p class="label">Selisih</p><p class="text-base font-extrabold num mt-1" :class="rangeStats.net<0?'t-exp':''" x-text="rp(rangeStats.net)"></p></div>
+        <div><p class="label">Jumlah transaksi</p><p class="text-base font-extrabold num mt-1" x-text="rangeStats.count"></p></div>
+      </div>
+      <p class="text-xs opacity-60" x-show="rangeStats.transfer">Transfer antardompet: <b class="num" x-text="rp(rangeStats.transfer)"></b> · tidak dihitung sebagai pemasukan/pengeluaran.</p>
+      <div x-show="rangeDays.length" class="space-y-2">
+        <template x-for="day in rangeDays" :key="day.date">
+          <div class="grid grid-cols-[54px_1fr_auto] items-center gap-2 text-[11px]">
+            <span class="opacity-60" x-text="dateShort(day.date)"></span>
+            <div class="flex h-2 overflow-hidden rounded-full bg-black/5 dark:bg-white/10">
+              <span class="h-full bg-lime-500" :style="`width:${rangeBarWidth(day.income)}%`"></span>
+              <span class="h-full bg-pop" :style="`width:${rangeBarWidth(day.expense)}%`"></span>
+            </div>
+            <span class="num font-semibold" x-text="rp(day.income-day.expense)"></span>
+          </div>
+        </template>
+      </div>
+      <p class="text-[10px] opacity-50">Grafik harian: pemasukan hijau · pengeluaran ungu.</p>
+    </section>
+    </template>
+
+    <!-- ---------- BULANAN ---------- -->
+    <template x-if="repMode==='month'">
+    <div class="space-y-5">
+      <div class="grid grid-cols-2 gap-3">
+        <div class="card p-4 min-w-0">
+          <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full c-inc"></span><span class="label">Pemasukan</span></div>
+          <p class="text-[17px] font-extrabold num mt-2 truncate" x-text="rp(mStats.income)"></p>
+          <p class="text-[11px] font-semibold mt-1 flex items-center gap-1" :class="deltas.income.cls"><svg x-show="deltas.income.icon" class="ic !w-3.5 !h-3.5"><use :href="'#i-'+deltas.income.icon"/></svg><span x-text="deltas.income.text"></span></p>
+        </div>
+        <div class="card p-4 min-w-0">
+          <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full c-exp"></span><span class="label">Pengeluaran</span></div>
+          <p class="text-[17px] font-extrabold num mt-2 truncate" x-text="rp(mStats.expense)"></p>
+          <p class="text-[11px] font-semibold mt-1 flex items-center gap-1" :class="deltas.expense.cls"><svg x-show="deltas.expense.icon" class="ic !w-3.5 !h-3.5"><use :href="'#i-'+deltas.expense.icon"/></svg><span x-text="deltas.expense.text"></span></p>
+        </div>
+        <div class="card p-4 min-w-0">
+          <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-ink dark:bg-white"></span><span class="label">Selisih</span></div>
+          <p class="text-[17px] font-extrabold num mt-2 truncate" :class="mStats.net<0?'t-exp':''" x-text="rp(mStats.net)"></p>
+          <p class="text-[11px] font-semibold mt-1 flex items-center gap-1" :class="deltas.net.cls"><svg x-show="deltas.net.icon" class="ic !w-3.5 !h-3.5"><use :href="'#i-'+deltas.net.icon"/></svg><span x-text="deltas.net.text"></span></p>
+        </div>
+        <div class="card p-4 min-w-0">
+          <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full c-sav"></span><span class="label">Ditabung ke target</span></div>
+          <p class="text-[17px] font-extrabold num mt-2 truncate" x-text="rp(mStats.saved)"></p>
+          <p class="text-[11px] font-semibold mt-1 flex items-center gap-1" :class="deltas.saved.cls"><svg x-show="deltas.saved.icon" class="ic !w-3.5 !h-3.5"><use :href="'#i-'+deltas.saved.icon"/></svg><span x-text="deltas.saved.text"></span></p>
+        </div>
+      </div>
+
+      <section class="card p-5 flex items-center gap-5" aria-label="Rasio tabung">
+        <div class="w-[88px] h-[88px] shrink-0 rounded-full grid place-items-center" :style="ringStyle(mStats.rate)">
+          <div class="w-[68px] h-[68px] rounded-full bg-white dark:bg-panel grid place-items-center text-center">
+            <div><p class="text-base font-extrabold num leading-5" x-text="rateText(mStats.rate)"></p><p class="text-[10px] opacity-60 leading-3">tersisa</p></div>
+          </div>
+        </div>
+        <div class="min-w-0 flex-1">
+          <h2 class="font-bold">Rasio tabung</h2>
+          <p class="text-xs opacity-70 mt-1" x-text="rateMsg"></p>
+          <p class="text-[11px] opacity-60 mt-2 num" x-text="mStats.income ? 'Dari pemasukan '+compact(mStats.income)+', pengeluaran '+compact(mStats.expense)+'.' : ''"></p>
+        </div>
+      </section>
+
+      <section class="card p-5" aria-label="Pengeluaran harian">
+        <div class="flex items-start justify-between gap-3 mb-4">
+          <h2 class="font-bold">Pengeluaran harian</h2>
+          <p class="text-xs font-semibold opacity-70 text-right num" x-text="dayInfo"></p>
+        </div>
+        <div class="grid gap-[3px] h-28 items-end" :style="`grid-template-columns:repeat(${daily.days.length},minmax(0,1fr))`">
+          <template x-for="d in daily.days" :key="d.day">
+            <button type="button" class="h-full flex items-end" @click="selDay = selDay===d.day ? null : d.day" :aria-label="'Tanggal '+d.day+': '+rp(d.total)">
+              <span class="block w-full rounded-t-[4px]" :class="[d.total ? 'c-exp' : 'bg-black/10 dark:bg-white/15', selDay && selDay!==d.day ? 'opacity-35' : '']" :style="`height:${d.total ? Math.max(5, d.total/daily.max*100) : 3}%`"></span>
+            </button>
+          </template>
+        </div>
+        <div class="grid gap-[3px] mt-1.5" :style="`grid-template-columns:repeat(${daily.days.length},minmax(0,1fr))`" aria-hidden="true">
+          <template x-for="d in daily.days" :key="'l'+d.day">
+            <span class="flex justify-center text-[9px] opacity-50 num"><span class="whitespace-nowrap" x-text="(d.day===1||d.day%5===0)?d.day:''"></span></span>
+          </template>
+        </div>
+      </section>
+
+      <div x-show="safePerDay!==null" class="rounded-3xl p-5 bg-lime text-ink">
+        <p class="text-xs font-bold opacity-70">Aman dibelanjakan per hari</p>
+        <p class="text-2xl font-extrabold num mt-0.5" x-text="rp(Math.max(0,safePerDay||0))"></p>
+        <p class="text-xs opacity-70 mt-1">Dihitung dari total anggaran dan sisa hari bulan ini.</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div class="card p-4 min-w-0"><p class="label">Rata-rata per hari</p><p class="text-[17px] font-extrabold num mt-1.5 truncate" x-text="rp(avgPerDay)"></p></div>
+        <div class="card p-4 min-w-0"><p class="label">Jumlah transaksi</p><p class="text-[17px] font-extrabold num mt-1.5" x-text="mStats.count"></p></div>
+        <div class="card p-4 min-w-0"><p class="label">Transaksi terbesar</p><p class="text-[17px] font-extrabold num mt-1.5 truncate" x-text="topTx[0] ? rp(topTx[0].amount) : '-'"></p></div>
+        <div class="card p-4 min-w-0"><p class="label">Kategori terboros</p><p class="text-[15px] font-extrabold mt-1.5 truncate" x-text="catStats[0] ? catStats[0].cat.emoji+' '+catStats[0].cat.name : '-'"></p></div>
+      </div>
+
+      <section class="card p-5" aria-label="Rincian kategori">
+        <h2 class="font-bold mb-4">Rincian kategori</h2>
+        <div class="space-y-4">
+          <template x-for="c in catStats" :key="c.cat.id">
+            <div>
+              <div class="flex items-baseline justify-between gap-3 text-sm mb-1.5">
+                <span class="truncate" x-text="c.cat.emoji+' '+c.cat.name"></span>
+                <span class="shrink-0 num"><b x-text="rp(c.total)"></b> <span class="text-xs opacity-60" x-text="Math.round(c.pct)+'%'"></span></span>
+              </div>
+              <div class="bar"><div :style="`width:${c.pct}%;background:${c.cat.color}`"></div></div>
+            </div>
+          </template>
+          <p x-show="catStats.length===0" class="text-sm text-center opacity-60">Belum ada pengeluaran.</p>
+        </div>
+      </section>
+
+      <section x-show="topTx.length>0" aria-label="Pengeluaran terbesar">
+        <h2 class="font-bold mb-3">5 pengeluaran terbesar</h2>
+        <div class="space-y-2.5">
+          <template x-for="t in topTx" :key="t.id">
+            <button type="button" @click="t.isTransferFee?null:openEdit(t)" class="card w-full flex items-center gap-3 p-3 text-left active:scale-[.985] transition-transform">
+              <span class="w-11 h-11 rounded-2xl grid place-items-center text-xl shrink-0" :style="t.isTransferFee?'background:#8B7CFF20':`background:${catOf(t.categoryId).color}2E`" x-text="t.isTransferFee?'↔':catOf(t.categoryId).emoji"></span>
+              <span class="flex-1 min-w-0">
+                <span class="block font-bold text-sm truncate" x-text="t.expenseNote || t.note || catOf(t.categoryId).name"></span>
+                <span class="block text-[11px] opacity-60 truncate" x-text="dateShort(t.date)"></span>
+              </span>
+              <span class="font-extrabold text-sm num shrink-0" x-text="'-'+rp(t.amount)"></span>
+            </button>
+          </template>
+        </div>
+      </section>
+
+      <section class="card p-5" aria-label="Anggaran bulanan">
+        <h2 class="font-bold">Anggaran bulanan</h2>
+        <p class="text-xs opacity-60 mb-4">Isi batas per kategori. Kosongkan jika tidak perlu.</p>
+        <div class="space-y-4">
+          <template x-for="c in expenseCats" :key="c.id">
+            <div>
+              <div class="flex items-center gap-3">
+                <span class="text-lg w-7 text-center" x-text="c.emoji"></span>
+                <span class="text-sm font-medium flex-1 min-w-0 truncate" x-text="c.name"></span>
+                <input inputmode="numeric" placeholder="0" :aria-label="'Batas anggaran '+c.name" :value="budgetInput(c.id)" @input="setBudget(c.id,$event.target.value); $event.target.value=budgetInput(c.id)" class="field !w-32 !h-10 text-right num">
+              </div>
+              <template x-if="budgetRow(c.id)">
+                <div class="mt-2 pl-10">
+                  <div class="bar"><div :style="`width:${Math.min(100,budgetRow(c.id).pct)}%`" :class="budgetRow(c.id).pct>=100?'c-exp':budgetRow(c.id).pct>=80?'!bg-amber-400':'c-inc'"></div></div>
+                  <p class="text-[11px] opacity-60 mt-1 num" x-text="rp(budgetRow(c.id).spent)+' dari '+rp(budgetRow(c.id).limit)"></p>
+                </div>
+              </template>
+            </div>
+          </template>
+        </div>
+      </section>
+    </div>
+    </template>
+
+    <!-- ---------- TAHUNAN ---------- -->
+    <template x-if="repMode==='year'">
+    <div class="space-y-5">
+      <div class="grid grid-cols-2 gap-3">
+        <div class="card p-4 min-w-0">
+          <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full c-inc"></span><span class="label">Pemasukan</span></div>
+          <p class="text-[17px] font-extrabold num mt-2 truncate" x-text="rp(yStats.totals.income)"></p>
+          <p class="text-[11px] opacity-60 mt-1 num" x-text="'Rata-rata '+compact(yStats.avgIncome)+' per bulan'"></p>
+        </div>
+        </template>
+        <div class="card p-4 min-w-0">
+          <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full c-exp"></span><span class="label">Pengeluaran</span></div>
+          <p class="text-[17px] font-extrabold num mt-2 truncate" x-text="rp(yStats.totals.expense)"></p>
+          <p class="text-[11px] opacity-60 mt-1 num" x-text="'Rata-rata '+compact(yStats.avgExpense)+' per bulan'"></p>
+        </div>
+        <div class="card p-4 min-w-0">
+          <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-ink dark:bg-white"></span><span class="label">Selisih</span></div>
+          <p class="text-[17px] font-extrabold num mt-2 truncate" :class="yStats.totals.net<0?'t-exp':''" x-text="rp(yStats.totals.net)"></p>
+          <p class="text-[11px] opacity-60 mt-1 num" x-text="'Rasio tabung '+rateText(yStats.totals.rate)"></p>
+        </div>
+        <div class="card p-4 min-w-0">
+          <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full c-sav"></span><span class="label">Ditabung ke target</span></div>
+          <p class="text-[17px] font-extrabold num mt-2 truncate" x-text="rp(yStats.totals.saved)"></p>
+          <p class="text-[11px] opacity-60 mt-1 num" x-text="'Rata-rata '+compact(yStats.avgSaved)+' per bulan'"></p>
+        </div>
+      </div>
+
+      <section class="card p-5" aria-label="Grafik pemasukan dan pengeluaran per bulan">
+        <div class="flex items-center justify-between gap-3 mb-4">
+          <h2 class="font-bold">Per bulan</h2>
+          <div class="flex items-center gap-3 text-[11px] font-semibold opacity-80">
+            <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-[3px] c-inc"></span>Pemasukan</span>
+            <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-[3px] c-exp"></span>Pengeluaran</span>
+          </div>
+        </div>
+        <p class="text-[10px] opacity-50 num mb-1" x-text="'Skala penuh: '+compact(yStats.maxValue)"></p>
+        <div class="grid grid-cols-12 gap-1 border-b border-black/10 dark:border-white/10">
+          <template x-for="m in yStats.months" :key="m.key">
+            <button type="button" class="flex flex-col items-center rounded-lg pb-1.5 transition-colors" :class="ySel.key===m.key?'bg-brand/10':''" @click="ySelIndex=m.index"
+                    :aria-label="m.name+': pemasukan '+rp(m.income)+', pengeluaran '+rp(m.expense)" :aria-pressed="ySel.key===m.key">
+              <span class="h-32 flex items-end gap-[2px]">
+                <span class="block w-[7px] rounded-t-[3px] c-inc" :style="`height:${barH(m.income)}%`"></span>
+                <span class="block w-[7px] rounded-t-[3px] c-exp" :style="`height:${barH(m.expense)}%`"></span>
+              </span>
+            </button>
+          </template>
+        </div>
+        <div class="grid grid-cols-12 gap-1 mt-1.5" aria-hidden="true">
+          <template x-for="m in yStats.months" :key="'x'+m.key">
+            <span class="text-[10px] text-center" :class="ySel.key===m.key?'font-bold':'opacity-50'" x-text="m.label.slice(0,3)"></span>
+          </template>
+        </div>
+      </section>
+
+      <section class="card p-5" aria-label="Detail bulan terpilih">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-bold" x-text="ySel.name+' '+year"></h2>
+          <button class="text-xs font-bold text-brand-deep dark:text-[#B7A8FF]" @click="openMonth(ySel.key)">Lihat detail bulan</button>
+        </div>
+        <div class="grid grid-cols-2 gap-x-4 gap-y-4">
+          <div class="min-w-0"><p class="label">Pemasukan</p><p class="font-extrabold num truncate" x-text="rp(ySel.income)"></p></div>
+          <div class="min-w-0"><p class="label">Pengeluaran</p><p class="font-extrabold num truncate" x-text="rp(ySel.expense)"></p></div>
+          <div class="min-w-0"><p class="label">Selisih</p><p class="font-extrabold num truncate" :class="ySel.net<0?'t-exp':''" x-text="rp(ySel.net)"></p></div>
+          <div class="min-w-0"><p class="label">Ditabung ke target</p><p class="font-extrabold num truncate" x-text="rp(ySel.saved)"></p></div>
+        </div>
+        <p class="text-xs mt-4 opacity-70">Rasio tabung <b class="num" x-text="rateText(ySel.rate)"></b> dari pemasukan</p>
+      </section>
+
+      <section class="card p-4" aria-label="Rekap per bulan">
+        <h2 class="font-bold mb-3 px-1">Rekap per bulan</h2>
+        <table class="w-full text-xs num">
+          <thead><tr><th scope="col" class="th !text-left pb-2 pl-1">Bulan</th><th scope="col" class="th pb-2">Masuk</th><th scope="col" class="th pb-2">Keluar</th><th scope="col" class="th pb-2">Selisih</th><th scope="col" class="th pb-2 pr-1">Target</th></tr></thead>
+          <tbody>
+            <template x-for="m in yStats.months" :key="m.key">
+              <tr class="border-t border-black/5 dark:border-white/10 cursor-pointer" :class="ySel.key===m.key?'bg-brand/10':''" tabindex="0" @click="ySelIndex=m.index" @keydown.enter="ySelIndex=m.index">
+                <td class="py-2.5 pl-1 font-bold" x-text="m.label"></td>
+                <td class="py-2.5 text-right" :class="m.active?'':'opacity-30'" x-text="m.active ? compact(m.income) : '-'"></td>
+                <td class="py-2.5 text-right" :class="m.active?'':'opacity-30'" x-text="m.active ? compact(m.expense) : '-'"></td>
+                <td class="py-2.5 text-right font-semibold" :class="!m.active?'opacity-30':m.net<0?'t-exp':''" x-text="m.active ? signed(m.net) : '-'"></td>
+                <td class="py-2.5 pr-1 text-right" :class="m.active?'':'opacity-30'" x-text="m.active ? signed(m.saved) : '-'"></td>
+              </tr>
+            </template>
+          </tbody>
+          <tfoot>
+            <tr class="border-t-2 border-black/10 dark:border-white/20 font-extrabold">
+              <td class="py-3 pl-1">Total</td>
+              <td class="py-3 text-right" x-text="compact(yStats.totals.income)"></td>
+              <td class="py-3 text-right" x-text="compact(yStats.totals.expense)"></td>
+              <td class="py-3 text-right" :class="yStats.totals.net<0?'t-exp':''" x-text="signed(yStats.totals.net)"></td>
+              <td class="py-3 pr-1 text-right" x-text="signed(yStats.totals.saved)"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </section>
+
+      <section class="card p-5" aria-label="Catatan tahun ini">
+        <h2 class="font-bold mb-4">Catatan tahun ini</h2>
+        <ul class="space-y-3.5">
+          <template x-for="(it,i) in yInsights" :key="i">
+            <li class="flex items-start gap-3 text-sm">
+              <span class="w-8 h-8 rounded-xl bg-brand/10 text-brand-deep dark:text-[#B7A8FF] grid place-items-center shrink-0"><svg class="ic !w-4 !h-4"><use :href="'#i-'+it.icon"/></svg></span>
+              <span class="pt-1" x-text="it.text"></span>
+            </li>
+          </template>
+        </ul>
+        <p x-show="yInsights.length===0" class="text-sm opacity-60 text-center py-2">Belum ada data di tahun ini.</p>
+      </section>
+
+      <section class="card p-5" x-show="yCats.length>0" aria-label="Kategori terbesar tahun ini">
+        <h2 class="font-bold mb-4">Kategori terbesar</h2>
+        <div class="space-y-4">
+          <template x-for="c in yCats.slice(0,6)" :key="c.cat.id">
+            <div>
+              <div class="flex items-baseline justify-between gap-3 text-sm mb-1.5">
+                <span class="truncate" x-text="c.cat.emoji+' '+c.cat.name"></span>
+                <span class="shrink-0 num"><b x-text="rp(c.total)"></b> <span class="text-xs opacity-60" x-text="Math.round(c.pct)+'%'"></span></span>
+              </div>
+              <div class="bar"><div :style="`width:${c.pct}%;background:${c.cat.color}`"></div></div>
+            </div>
+          </template>
+        </div>
+      </section>
+    </div>
+  </main>
+  </template>
+
+  <!-- ===================== PENGATURAN ===================== -->
+  <template x-if="tab==='settings'">
+  <main class="px-5 pt-[max(env(safe-area-inset-top),20px)] space-y-5">
+    <header class="flex items-center gap-3 h-11">
+      <button @click="go('home')" class="iconbtn" aria-label="Kembali ke beranda"><svg class="ic"><use href="#i-chevron-left"/></svg></button>
+      <h1 class="text-[22px] font-extrabold">Pengaturan</h1>
+    </header>
+
+    <section class="card p-5 space-y-4">
+      <div>
+        <label class="label" for="inp-name">Nama panggilan</label>
+        <input id="inp-name" x-model="state.name" @input="persist()" maxlength="30" class="field mt-2" autocomplete="nickname">
+      </div>
+      <div class="flex items-center justify-between gap-3">
+        <span class="flex items-center gap-3 text-sm font-semibold"><svg class="ic"><use href="#i-moon"/></svg>Mode gelap</span>
+        <button class="switch" role="switch" :aria-checked="state.dark" aria-label="Mode gelap" @click="toggleDark()"><span></span></button>
+      </div>
+      <div class="flex items-center justify-between gap-3">
+        <span class="flex items-center gap-3 text-sm font-semibold"><svg class="ic"><use href="#i-eye-off"/></svg>Sembunyikan saldo</span>
+        <button class="switch" role="switch" :aria-checked="state.hideBalance" aria-label="Sembunyikan saldo" @click="toggleHide()"><span></span></button>
+      </div>
+    </section>
+
+    <section class="card p-5">
+      <h2 class="font-bold mb-3">Dompet</h2>
+      <ul class="space-y-3">
+        <template x-for="w in state.wallets" :key="w.id">
+          <li class="flex items-center gap-3 text-sm">
+            <span class="w-9 h-9 rounded-xl grid place-items-center text-[10px] font-extrabold text-white shrink-0" :style="`background:${walletColor(w)}`" x-text="walletMark(w)"></span>
+            <span class="flex-1 min-w-0 truncate font-medium"><span x-text="w.name"></span><span class="block text-[10px] opacity-50" x-text="walletKindLabel(w)"></span></span>
+            <b class="num" x-text="hide(rp(walletBalance(w)))"></b>
+            <button @click="delWallet(w)" class="w-9 h-9 -mr-2 grid place-items-center opacity-50 hover:opacity-100" :aria-label="'Hapus dompet '+w.name"><svg class="ic !w-4 !h-4"><use href="#i-trash-2"/></svg></button>
+          </li>
+        </template>
+      </ul>
+      <form class="grid grid-cols-[100px_1fr_104px_48px] gap-2 mt-4" @submit.prevent="addWallet()">
+        <select x-model="newWallet.kind" @change="changeWalletKind()" aria-label="Jenis dompet" class="field !px-2 text-xs">
+          <option value="cash">Tunai</option><option value="bank">Bank</option><option value="ewallet">E-wallet</option>
+        </select>
+        <input x-model="newWallet.name" placeholder="Nama dompet" aria-label="Nama dompet" maxlength="24" class="field min-w-0">
+        <input x-model="newWallet.initial" inputmode="numeric" placeholder="Saldo awal" aria-label="Saldo awal" class="field min-w-0 !px-3">
+        <button type="submit" class="h-12 rounded-2xl bg-brand text-white grid place-items-center" aria-label="Tambah dompet"><svg class="ic"><use href="#i-plus"/></svg></button>
+      </form>
+    </section>
+
+    <section class="card p-5">
+      <h2 class="font-bold mb-3">Kategori</h2>
+      <div class="flex flex-wrap gap-2">
+        <template x-for="c in state.categories" :key="c.id">
+          <span class="inline-flex items-center gap-1.5 h-9 rounded-full pl-3 pr-1 text-xs font-semibold bg-canvas dark:bg-night">
+            <span x-text="c.emoji"></span><span x-text="c.name"></span>
+            <span class="w-1.5 h-1.5 rounded-full" :class="c.type==='income'?'c-inc':'c-exp'" :title="c.type==='income'?'Pemasukan':'Pengeluaran'"></span>
+            <button @click="delCat(c)" class="w-7 h-7 grid place-items-center opacity-50 hover:opacity-100" :aria-label="'Hapus kategori '+c.name"><svg class="ic !w-3 !h-3"><use href="#i-x"/></svg></button>
+          </span>
+        </template>
+      </div>
+      <form class="grid grid-cols-[52px_1fr_104px_48px] gap-2 mt-4" @submit.prevent="addCat()">
+        <input x-model="newCat.emoji" @change="newCat.emoji = grapheme(newCat.emoji,'🏷️')" aria-label="Ikon kategori" class="field !px-0 text-center">
+        <input x-model="newCat.name" placeholder="Nama kategori" aria-label="Nama kategori" maxlength="24" class="field min-w-0">
+        <select x-model="newCat.type" aria-label="Jenis kategori" class="field !px-3"><option value="expense">Keluar</option><option value="income">Masuk</option></select>
+        <button type="submit" class="h-12 rounded-2xl bg-brand text-white grid place-items-center" aria-label="Tambah kategori"><svg class="ic"><use href="#i-plus"/></svg></button>
+      </form>
+    </section>
+
+    <section class="card p-5 space-y-3">
+      <div>
+        <h2 class="font-bold">Data</h2>
+        <p class="text-xs opacity-60 mt-0.5 num" x-text="dataSummary"></p>
+      </div>
+      <button class="btn btn-lime w-full" @click="exportExcel()" :disabled="!!busy"><svg class="ic"><use href="#i-file-spreadsheet"/></svg><span x-text="busy==='export' ? 'Menyiapkan file…' : 'Ekspor ke Excel'"></span></button>
+      <p class="text-[11px] opacity-60 -mt-1">Berisi semua transaksi, target, setoran, dompet, kategori, anggaran, dan ringkasan bulanan. <span x-text="lastExportText"></span>.</p>
+      <button class="btn btn-soft w-full" @click="exportJSON()" :disabled="!!busy"><svg class="ic"><use href="#i-download"/></svg><span x-text="busy==='json-export' ? 'Menyiapkan file…' : 'Ekspor backup JSON'"></span></button>
+      <p class="text-[11px] opacity-60 -mt-1">Simpan salinan lengkap data Duitku dalam format JSON.</p>
+      <label class="btn btn-soft w-full cursor-pointer focus-within:ring-2 focus-within:ring-brand">
+        <svg class="ic"><use href="#i-upload"/></svg><span x-text="busy==='import' ? 'Membaca file…' : 'Impor backup'"></span>
+        <input type="file" accept=".xlsx,.xls,.json" class="sr-only" @change="importBackup($event)">
+      </label>
+      <p class="text-[11px] opacity-60 -mt-1">Pilih backup Excel atau JSON dari Duitku. Isi file akan diperiksa sebelum dipulihkan. Data yang ada sekarang hanya diganti setelah kamu menyetujuinya.</p>
+      <button class="btn btn-danger w-full" @click="resetAll()"><svg class="ic"><use href="#i-trash-2"/></svg>Hapus semua data</button>
+    </section>
+
+    <p class="text-[11px] opacity-50 text-center pb-2">Duitku v2.0.0 · Data tersimpan di perangkat ini</p>
+  </main>
+  </template>
+
+  <!-- ===================== NAVIGASI ===================== -->
+  <nav class="fixed bottom-0 inset-x-0 z-30" aria-label="Menu utama">
+    <div class="mx-auto max-w-md px-4 pb-[max(env(safe-area-inset-bottom),12px)]">
+      <div class="relative h-[68px] grid grid-cols-5 items-stretch rounded-[28px] bg-white/90 dark:bg-panel/90 backdrop-blur-xl shadow-float ring-1 ring-black/5 dark:ring-white/10">
+        <button class="navbtn" :class="tab==='home'?'on':''" @click="go('home')" :aria-current="tab==='home'?'page':null"><span class="navic"><svg class="ic !w-[22px] !h-[22px]"><use href="#i-house"/></svg></span>Beranda</button>
+        <button class="navbtn" :class="tab==='tx'?'on':''" @click="go('tx')" :aria-current="tab==='tx'?'page':null"><span class="navic"><svg class="ic !w-[22px] !h-[22px]"><use href="#i-receipt-text"/></svg></span>Transaksi</button>
+        <div aria-hidden="true"></div>
+        <button class="navbtn" :class="tab==='targets'?'on':''" @click="go('targets')" :aria-current="tab==='targets'?'page':null"><span class="navic"><svg class="ic !w-[22px] !h-[22px]"><use href="#i-target"/></svg></span>Target</button>
+        <button class="navbtn" :class="tab==='report'?'on':''" @click="go('report')" :aria-current="tab==='report'?'page':null"><span class="navic"><svg class="ic !w-[22px] !h-[22px]"><use href="#i-chart-no-axes-column"/></svg></span>Analisis</button>
+        <button @click="openAdd()" aria-label="Catat transaksi baru"
+          class="absolute left-1/2 -translate-x-1/2 -top-5 w-14 h-14 rounded-full text-white grid place-items-center ring-[5px] ring-canvas dark:ring-night shadow-float active:scale-95 transition-transform"
+          style="background:linear-gradient(135deg,#7C5CFF,#FF5FA2)"><svg class="ic !w-7 !h-7"><use href="#i-plus"/></svg></button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ===================== LEMBAR: TRANSAKSI ===================== -->
+  <div x-show="sheet" class="fade fixed inset-0 z-40 flex items-end justify-center bg-black/50" @click.self="sheet=false" role="dialog" aria-modal="true" aria-label="Catat transaksi">
+    <div class="sheet w-full max-w-md bg-canvas dark:bg-night rounded-t-4xl max-h-[92dvh] flex flex-col">
+      <div class="pt-3 pb-4 px-5"><div class="w-10 h-1.5 rounded-full bg-black/10 dark:bg-white/20 mx-auto"></div></div>
+      <div class="px-5 overflow-y-auto no-scrollbar flex-1">
+        <div class="seg mb-6">
+          <button @click="setType('expense')" :class="form.type==='expense'?'on':''">Pengeluaran</button>
+          <button @click="setType('income')" :class="form.type==='income'?'on':''">Pemasukan</button>
+          <button @click="setType('transfer')" :class="form.type==='transfer'?'on':''">Transfer</button>
+        </div>
+        <div class="text-center mb-6">
+          <label class="label" for="inp-amount">Nominal</label>
+          <div class="flex items-center justify-center gap-2 mt-1">
+            <span class="text-2xl font-bold opacity-40">Rp</span>
+            <input id="inp-amount" x-ref="amount" x-model="form.amount" @input="form.amount=fmtInput($event.target.value)" @keydown.enter="saveTx()" inputmode="numeric" autocomplete="off" placeholder="0"
+              class="bg-transparent text-[40px] leading-[48px] font-extrabold text-center w-56 outline-none num">
+          </div>
+        </div>
+        <div x-show="form.type!=='transfer'">
+        <p class="label mb-2">Kategori</p>
+        <div class="grid grid-cols-4 gap-2 mb-5">
+          <template x-for="c in formCats" :key="c.id">
+            <button type="button" @click="form.categoryId=c.id" class="rounded-2xl h-[78px] flex flex-col items-center justify-center gap-1 bg-white dark:bg-panel border-2 transition-colors" :class="form.categoryId===c.id?'border-brand':'border-transparent'" :aria-pressed="form.categoryId===c.id">
+              <span class="text-2xl leading-none" x-text="c.emoji"></span>
+              <span class="text-[10px] font-semibold truncate max-w-full px-1" x-text="c.name"></span>
+            </button>
+          </template>
+        </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <div>
+            <label class="label" for="inp-wallet" x-text="form.type==='transfer'?'Dompet asal':'Dompet'"></label>
+            <select id="inp-wallet" x-model="form.walletId" class="field field-on-card mt-2">
+              <template x-for="w in state.wallets" :key="w.id"><option :value="w.id" x-text="walletName(w)"></option></template>
+            </select>
+          </div>
+          <div>
+            <label class="label" for="inp-date">Tanggal</label>
+            <input id="inp-date" type="date" x-model="form.date" class="field field-on-card mt-2">
+          </div>
+        </div>
+        <div x-show="form.type==='transfer'" class="grid grid-cols-2 gap-3 mb-3">
+          <div>
+            <label class="label" for="inp-to-wallet">Dompet tujuan</label>
+            <select id="inp-to-wallet" x-model="form.toWalletId" class="field field-on-card mt-2">
+              <template x-for="w in state.wallets.filter(item=>item.id!==form.walletId)" :key="w.id"><option :value="w.id" x-text="walletName(w)"></option></template>
+            </select>
+          </div>
+          <div>
+            <label class="label" for="inp-fee">Biaya admin (opsional)</label>
+            <input id="inp-fee" x-model="form.feeAmount" @input="form.feeAmount=fmtInput($event.target.value)" inputmode="numeric" placeholder="0" class="field field-on-card mt-2">
+          </div>
+        </div>
+        <div class="flex gap-2 mb-3">
+          <button type="button" class="chip" :class="form.date===todayStr?'on':''" @click="setDate('today')">Hari ini</button>
+          <button type="button" class="chip" :class="form.date===yesterdayStr?'on':''" @click="setDate('yesterday')">Kemarin</button>
+        </div>
+        <input x-model="form.note" maxlength="120" placeholder="Catatan (opsional)" aria-label="Catatan" class="field field-on-card mb-2">
+        <p x-show="formError" class="text-xs font-semibold t-exp mt-2" role="alert" x-text="formError"></p>
+      </div>
+      <div class="flex gap-2 p-5 pb-[max(env(safe-area-inset-bottom),20px)]">
+        <button x-show="form.id" @click="removeTx()" class="btn btn-danger px-6" aria-label="Hapus transaksi"><svg class="ic"><use href="#i-trash-2"/></svg></button>
+        <button @click="saveTx()" class="btn btn-primary flex-1" x-text="form.id?'Simpan perubahan':'Simpan'"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== LEMBAR: DETAIL TARGET ===================== -->
+  <div x-show="detailId" class="fade fixed inset-0 z-40 flex items-end justify-center bg-black/50" @click.self="detailId=null" role="dialog" aria-modal="true" aria-label="Detail target">
+    <template x-if="detailT">
+      <div class="sheet w-full max-w-md bg-canvas dark:bg-night rounded-t-4xl max-h-[92dvh] flex flex-col">
+        <div class="pt-3 pb-4 px-5"><div class="w-10 h-1.5 rounded-full bg-black/10 dark:bg-white/20 mx-auto"></div></div>
+        <div class="px-5 overflow-y-auto no-scrollbar flex-1 space-y-4">
+          <div class="flex items-center gap-4">
+            <div class="w-[72px] h-[72px] rounded-full shrink-0 grid place-items-center" :style="ring(detailT)">
+              <div class="w-[58px] h-[58px] rounded-full bg-canvas dark:bg-night grid place-items-center text-3xl" x-text="detailT.emoji"></div>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h2 class="text-lg font-extrabold truncate" x-text="detailT.name"></h2>
+              <p class="text-xs opacity-60 mt-0.5" x-text="deadlineText(detailT)"></p>
+            </div>
+            <button @click="openTargetForm(detailT)" class="iconbtn" aria-label="Edit target"><svg class="ic"><use href="#i-pencil"/></svg></button>
+          </div>
+          <div class="card p-5">
+            <div class="flex items-end justify-between">
+              <div><p class="label">Terkumpul</p><p class="text-2xl font-extrabold num" x-text="hide(rp(targetSaved(detailT)))"></p></div>
+              <b class="text-lg num" x-text="Math.round(targetPct(detailT))+'%'"></b>
+            </div>
+            <div class="bar mt-3"><div :style="`width:${targetPct(detailT)}%;background:${detailT.color}`"></div></div>
+            <div class="grid grid-cols-2 gap-3 mt-4 text-xs">
+              <div><p class="opacity-60">Target</p><p class="font-bold num mt-0.5" x-text="rp(detailT.target)"></p></div>
+              <div><p class="opacity-60">Sisa</p><p class="font-bold num mt-0.5" x-text="rp(Math.max(0,detailT.target-targetSaved(detailT)))"></p></div>
+            </div>
+            <p class="text-xs font-semibold text-brand-deep dark:text-[#B7A8FF] mt-4" x-text="needText(detailT)"></p>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <button @click="openContrib(detailT,'in')" class="btn btn-lime">Setor</button>
+            <button @click="openContrib(detailT,'out')" class="btn btn-soft">Tarik dana</button>
+          </div>
+          <div class="card p-5">
+            <h3 class="font-bold mb-3">Riwayat</h3>
+            <p x-show="detailT.contribs.length===0" class="text-xs opacity-60 text-center py-3">Belum ada setoran.</p>
+            <ul class="space-y-3">
+              <template x-for="c in sortedContribs(detailT)" :key="c.id">
+                <li class="flex items-center gap-3 text-sm">
+                  <span class="w-9 h-9 rounded-xl grid place-items-center shrink-0" :class="c.type==='in'?'bg-lime text-ink':'bg-pop/20 text-pop'"><svg class="ic !w-4 !h-4"><use :href="c.type==='in'?'#i-arrow-down-left':'#i-arrow-up-right'"/></svg></span>
+                  <div class="flex-1 min-w-0">
+                    <p class="font-semibold truncate" x-text="c.note || (c.type==='in'?'Setoran':'Penarikan')"></p>
+                    <p class="text-[11px] opacity-60 truncate" x-text="dateShort(c.date)+' · '+(c.walletId? walletOf(c.walletId).name : 'Di luar dompet')"></p>
+                  </div>
+                  <b class="num text-xs" :class="c.type==='in'?'t-inc':''" x-text="(c.type==='in'?'+':'-')+rp(c.amount)"></b>
+                  <button @click="delContrib(detailT,c)" class="w-8 h-8 grid place-items-center opacity-50 hover:opacity-100" aria-label="Hapus catatan"><svg class="ic !w-3.5 !h-3.5"><use href="#i-x"/></svg></button>
+                </li>
+              </template>
+            </ul>
+          </div>
+        </div>
+        <div class="p-5 pb-[max(env(safe-area-inset-bottom),20px)]"><button @click="detailId=null" class="btn btn-soft w-full">Tutup</button></div>
+      </div>
+    </template>
+  </div>
+
+  <!-- ===================== LEMBAR: FORM TARGET ===================== -->
+  <div x-show="tSheet" class="fade fixed inset-0 z-50 flex items-end justify-center bg-black/50" @click.self="tSheet=false" role="dialog" aria-modal="true" aria-label="Form target">
+    <div class="sheet w-full max-w-md bg-canvas dark:bg-night rounded-t-4xl max-h-[92dvh] flex flex-col">
+      <div class="pt-3 pb-4 px-5"><div class="w-10 h-1.5 rounded-full bg-black/10 dark:bg-white/20 mx-auto"></div></div>
+      <div class="px-5 overflow-y-auto no-scrollbar flex-1 space-y-4">
+        <h2 class="text-lg font-extrabold" x-text="tf.id?'Edit target':'Target baru'"></h2>
+        <div x-show="!tf.id">
+          <p class="label mb-2">Mulai cepat</p>
+          <div class="flex gap-2 overflow-x-auto no-scrollbar -mx-5 px-5 pb-1">
+            <template x-for="p in presets" :key="p.name"><button type="button" @click="applyPreset(p)" class="chip shrink-0" x-text="p.emoji+' '+p.name"></button></template>
+          </div>
+        </div>
+        <div class="grid grid-cols-[64px_1fr] gap-3">
+          <div><label class="label" for="tf-emoji">Ikon</label><input id="tf-emoji" x-model="tf.emoji" @change="tf.emoji = grapheme(tf.emoji,'🎯')" class="field field-on-card mt-2 !px-0 text-center !text-xl"></div>
+          <div><label class="label" for="tf-name">Nama target</label><input id="tf-name" x-model="tf.name" maxlength="40" placeholder="Contoh: Dana darurat" class="field field-on-card mt-2"></div>
+        </div>
+        <div>
+          <label class="label" for="tf-target">Nominal target</label>
+          <div class="relative mt-2">
+            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold opacity-40">Rp</span>
+            <input id="tf-target" x-model="tf.target" @input="tf.target=fmtInput($event.target.value)" inputmode="numeric" placeholder="0" class="field field-on-card !pl-11 num">
+          </div>
+        </div>
+        <div><label class="label" for="tf-deadline">Tenggat (opsional)</label><input id="tf-deadline" type="date" x-model="tf.deadline" class="field field-on-card mt-2"></div>
+        <p x-show="tError" class="text-xs font-semibold t-exp" role="alert" x-text="tError"></p>
+      </div>
+      <div class="flex gap-2 p-5 pb-[max(env(safe-area-inset-bottom),20px)]">
+        <button x-show="tf.id" @click="delTarget()" class="btn btn-danger px-6" aria-label="Hapus target"><svg class="ic"><use href="#i-trash-2"/></svg></button>
+        <button @click="saveTarget()" class="btn btn-primary flex-1" x-text="tf.id?'Simpan perubahan':'Buat target'"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== LEMBAR: SETOR / TARIK ===================== -->
+  <div x-show="cSheet" class="fade fixed inset-0 z-[55] flex items-end justify-center bg-black/50" @click.self="cSheet=false" role="dialog" aria-modal="true" aria-label="Setor atau tarik dana">
+    <div class="sheet w-full max-w-md bg-canvas dark:bg-night rounded-t-4xl max-h-[92dvh] flex flex-col">
+      <div class="pt-3 pb-4 px-5"><div class="w-10 h-1.5 rounded-full bg-black/10 dark:bg-white/20 mx-auto"></div></div>
+      <div class="px-5 overflow-y-auto no-scrollbar flex-1">
+        <p class="text-center text-sm font-bold opacity-70 mb-4" x-text="cf.targetName"></p>
+        <div class="seg mb-6">
+          <button @click="cf.type='in'" :class="cf.type==='in'?'on':''">Setor</button>
+          <button @click="cf.type='out'" :class="cf.type==='out'?'on':''">Tarik</button>
+        </div>
+        <div class="text-center mb-6">
+          <label class="label" for="cf-amount">Nominal</label>
+          <div class="flex items-center justify-center gap-2 mt-1">
+            <span class="text-2xl font-bold opacity-40">Rp</span>
+            <input id="cf-amount" x-model="cf.amount" @input="cf.amount=fmtInput($event.target.value)" @keydown.enter="saveContrib()" inputmode="numeric" autocomplete="off" placeholder="0" class="bg-transparent text-[40px] leading-[48px] font-extrabold text-center w-56 outline-none num">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <div>
+            <label class="label" for="cf-wallet" x-text="cf.type==='in'?'Diambil dari':'Dikembalikan ke'"></label>
+            <select id="cf-wallet" x-model="cf.walletId" class="field field-on-card mt-2">
+              <option value="">Di luar dompet</option>
+              <template x-for="w in state.wallets" :key="w.id"><option :value="w.id" x-text="w.emoji+' '+w.name"></option></template>
+            </select>
+          </div>
+          <div><label class="label" for="cf-date">Tanggal</label><input id="cf-date" type="date" x-model="cf.date" class="field field-on-card mt-2"></div>
+        </div>
+        <input x-model="cf.note" maxlength="120" placeholder="Catatan (opsional)" aria-label="Catatan" class="field field-on-card">
+        <p class="text-[11px] opacity-60 mt-3">Pilih dompet agar saldonya ikut berubah. Pilih "Di luar dompet" bila dana disimpan di tempat terpisah.</p>
+        <p x-show="cError" class="text-xs font-semibold t-exp mt-3" role="alert" x-text="cError"></p>
+      </div>
+      <div class="p-5 pb-[max(env(safe-area-inset-bottom),20px)]"><button @click="saveContrib()" class="btn btn-primary w-full" x-text="cf.type==='in'?'Simpan setoran':'Simpan penarikan'"></button></div>
+    </div>
+  </div>
+
+  <!-- ===================== DIALOG KONFIRMASI ===================== -->
+  <div x-show="cb.open" class="fade fixed inset-0 z-[60] grid place-items-center bg-black/55 px-6" role="alertdialog" aria-modal="true" aria-labelledby="cb-title" @click.self="answer(false)">
+    <div class="sheet card w-full max-w-sm p-6 !rounded-4xl">
+      <div class="w-12 h-12 rounded-2xl grid place-items-center mb-4" :class="cb.danger?'bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-300':'bg-brand/10 text-brand-deep'"><svg class="ic !w-6 !h-6"><use :href="cb.danger?'#i-trash-2':'#i-info'"/></svg></div>
+      <h2 id="cb-title" class="text-lg font-extrabold" x-text="cb.title"></h2>
+      <p x-show="cb.text" class="text-sm opacity-70 mt-1.5" x-text="cb.text"></p>
+      <div class="grid grid-cols-2 gap-3 mt-6">
+        <button class="btn btn-soft" @click="answer(false)">Batal</button>
+        <button class="btn" :class="cb.danger?'bg-red-600 text-white':'btn-primary'" @click="answer(true)" x-text="cb.ok"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== TOAST ===================== -->
+  <div x-show="toast" x-transition.opacity class="fixed top-[max(env(safe-area-inset-top),16px)] inset-x-0 z-[70] flex justify-center pointer-events-none px-5" role="status" aria-live="polite">
+    <div class="bg-ink dark:bg-white dark:text-ink text-white text-sm font-semibold rounded-2xl px-4 py-3 shadow-float max-w-sm text-center" x-text="toast"></div>
+  </div>
+</div>
+</body>
+</html>

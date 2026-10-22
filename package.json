@@ -1,0 +1,17 @@
+{
+  "name": "duitku",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "verify": "node scripts/verify-build.mjs",
+    "format": "prettier --write \"src/assets/*.js\" \"scripts/*.mjs\" \"src/tests/*.mjs\"",
+    "format:check": "prettier --check \"src/assets/*.js\" \"scripts/*.mjs\" \"src/tests/*.mjs\"",
+    "test": "node --test src/tests/*.test.mjs",
+    "check": "npm run format:check && node --test src/tests/*.test.mjs && node scripts/build.mjs && node scripts/verify-build.mjs"
+  },
+  "devDependencies": {
+    "prettier": "^3.5.3"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "Duitku - Catatan Keuangan",
+  "short_name": "Duitku",
+  "description": "Catat pemasukan, pengeluaran, dan target tabungan. Lengkap dengan analisis bulanan dan tahunan.",
+  "lang": "id",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F5F2FF",
+  "theme_color": "#7C5CFF",
+  "categories": ["finance", "productivity"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
