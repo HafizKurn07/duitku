@@ -67,6 +67,7 @@ function createState() {
     targets: [
       {
         id: "emergency",
+        name: "Dana darurat",
         contribs: [
           { id: "deposit-cash", type: "in", amount: 500_000, walletId: "cash", date: "2026-10-05" },
           {
@@ -90,13 +91,33 @@ test("monthly summary includes only matching month and signs target withdrawals"
     { ...summary },
     {
       key: "2026-10",
-      income: 5_000_000,
-      expense: 3_000_000,
-      net: 2_000_000,
+      income: 5_100_000,
+      expense: 3_500_000,
+      net: 1_600_000,
       saved: 400_000,
-      count: 4,
-      rate: 0.4,
+      count: 6,
+      rate: 1_600_000 / 5_100_000,
     },
+  );
+});
+
+test("monthly budget remaining includes net target contributions for the selected month", () => {
+  const state = createState();
+
+  assert.equal(finance.monthlyBudgetRemaining(state, "2026-10", 1_500_000, 800_000), 300_000);
+  assert.equal(finance.monthlyBudgetRemaining(state, "2026-09", 1_500_000, 800_000), 500_000);
+  assert.equal(finance.monthlyBudgetRemaining(state, "2026-08", 1_500_000, 800_000), 700_000);
+  assert.equal(
+    finance.monthlyBudgetRemaining(
+      {
+        transactions: [],
+        targets: [{ contribs: [{ type: "out", amount: 100, date: "2026-10-01" }] }],
+      },
+      "2026-10",
+      1_000,
+      0,
+    ),
+    1_100,
   );
 });
 
@@ -117,6 +138,7 @@ test("monthly summary reports a negative net when expenses exceed income", () =>
     { type: "income", amount: 100, date: "2026-10-01" },
     { type: "expense", amount: 250, date: "2026-10-02" },
   ];
+  state.targets = [];
 
   const summary = finance.summarizeMonth(state, "2026-10");
 
@@ -134,13 +156,17 @@ test("category breakdown groups, sorts, and calculates percentages by type and m
     [
       { id: "food", total: 2_000_000 },
       { id: "other", total: 1_000_000 },
+      { id: "target:emergency", total: 500_000 },
     ],
   );
-  assert.ok(Math.abs(expenses[0].pct - 200 / 3) < 1e-10);
-  assert.ok(Math.abs(expenses[1].pct - 100 / 3) < 1e-10);
-  assert.equal(income.length, 1);
+  assert.equal(expenses[2].cat.name, "Dana darurat");
+  assert.ok(Math.abs(expenses[0].pct - (2_000_000 / 3_500_000) * 100) < 1e-10);
+  assert.ok(Math.abs(expenses[1].pct - (1_000_000 / 3_500_000) * 100) < 1e-10);
+  assert.equal(income.length, 2);
   assert.equal(income[0].cat.id, "salary");
-  assert.equal(income[0].pct, 100);
+  assert.equal(income[0].total, 5_000_000);
+  assert.equal(income[1].total, 100_000);
+  assert.ok(Math.abs(income[0].pct - (5_000_000 / 5_100_000) * 100) < 1e-10);
 });
 
 test("category breakdown assigns an unknown category to the existing fallback label", () => {
@@ -180,19 +206,20 @@ test("annual summary totals transactions and target movements for the selected y
   assert.deepEqual(
     { ...summary.totals },
     {
-      income: 5_900_000,
-      expense: 3_000_000,
+      income: 6_000_000,
+      expense: 3_700_000,
       saved: 600_000,
-      count: 5,
-      net: 2_900_000,
-      rate: 2_900_000 / 5_900_000,
+      count: 8,
+      net: 2_300_000,
+      rate: 2_300_000 / 6_000_000,
     },
   );
   assert.equal(summary.activeMonths, 2);
-  assert.equal(summary.avgIncome, 2_950_000);
-  assert.equal(summary.avgExpense, 1_500_000);
+  assert.equal(summary.totals.income, 6_000_000);
+  assert.equal(summary.avgIncome, 3_000_000);
+  assert.equal(summary.avgExpense, 1_850_000);
   assert.equal(summary.avgSaved, 300_000);
-  assert.equal(summary.maxValue, 5_000_000);
+  assert.equal(summary.maxValue, 5_100_000);
   assert.equal(summary.months[8].name, "September");
   assert.equal(summary.months[8].saved, 200_000);
   assert.equal(summary.months[9].saved, 400_000);
@@ -242,14 +269,22 @@ test("daily chart includes every day of a leap-year February and identifies its 
       { type: "income", amount: 1_000, date: "2024-02-01" },
       { type: "expense", amount: 100, date: "2024-01-31" },
     ],
+    targets: [
+      {
+        contribs: [
+          { type: "in", amount: 7, date: "2024-02-29" },
+          { type: "out", amount: 5, date: "2024-02-29" },
+        ],
+      },
+    ],
   };
   const result = finance.dailyExpenses(state, "2024-02");
 
   assert.equal(result.days.length, 29);
-  assert.equal(result.days[28].total, 50);
-  assert.equal(result.max, 50);
+  assert.equal(result.days[28].total, 57);
+  assert.equal(result.max, 57);
   assert.equal(result.top.day, 29);
-  assert.equal(result.top.total, 50);
+  assert.equal(result.top.total, 57);
 });
 
 test("weekly chart uses the selected month end and scales bars from matching dates", () => {
@@ -260,6 +295,11 @@ test("weekly chart uses the selected month end and scales bars from matching dat
       { type: "expense", amount: 900, date: "2026-05-01" },
       { type: "income", amount: 2_000, date: "2026-04-29" },
     ],
+    targets: [
+      {
+        contribs: [{ type: "in", amount: 20, date: "2026-04-25" }],
+      },
+    ],
   };
   const result = finance.weeklyExpenses(state, "2026-04", new Date(2026, 4, 22));
 
@@ -269,7 +309,7 @@ test("weekly chart uses the selected month end and scales bars from matching dat
     ),
     [
       { key: "2026-04-24", total: 0, h: 4, isToday: false },
-      { key: "2026-04-25", total: 50, h: 50, isToday: false },
+      { key: "2026-04-25", total: 70, h: 70, isToday: false },
       { key: "2026-04-26", total: 0, h: 4, isToday: false },
       { key: "2026-04-27", total: 0, h: 4, isToday: false },
       { key: "2026-04-28", total: 0, h: 4, isToday: false },
@@ -308,6 +348,27 @@ test("top expenses sort by amount then newest date and honor the limit", () => {
     Array.from(finance.topExpenses(state, "2026-10", 2), (transaction) => transaction.id),
     ["large", "new"],
   );
+});
+
+test("target deposits appear in ranked expenses with their target name", () => {
+  const expenses = finance.topExpenses(
+    {
+      transactions: [{ id: "expense", type: "expense", amount: 100, date: "2026-10-01" }],
+      targets: [
+        {
+          id: "travel",
+          name: "Liburan",
+          contribs: [{ id: "deposit", type: "in", amount: 500, date: "2026-10-02" }],
+        },
+      ],
+    },
+    "2026-10",
+  );
+
+  assert.equal(expenses[0].id, "deposit");
+  assert.equal(expenses[0].type, "expense");
+  assert.equal(expenses[0].categoryId, "target:travel");
+  assert.equal(expenses[0].expenseNote, "Setoran Liburan");
 });
 
 test("transaction search index matches notes, categories, transfer wallets, and type filters", () => {
@@ -623,4 +684,39 @@ test("range reports include both selected dates and exclude neighboring days", (
   assert.equal(summary.expense, 200);
   assert.equal(summary.net, 800);
   assert.equal(summary.count, 2);
+});
+
+test("range reports and daily totals include target deposits as expense and withdrawals as income", () => {
+  const state = {
+    transactions: [],
+    targets: [
+      {
+        id: "emergency",
+        name: "Dana darurat",
+        contribs: [
+          { type: "in", amount: 600, date: "2026-10-31" },
+          { type: "out", amount: 250, date: "2026-11-01" },
+          { type: "in", amount: 900, date: "2026-11-02" },
+        ],
+      },
+    ],
+  };
+
+  const summary = finance.summarizeRange(state, "2026-10-31", "2026-11-01");
+  assert.equal(summary.income, 250);
+  assert.equal(summary.expense, 600);
+  assert.equal(summary.saved, 350);
+  assert.equal(summary.net, -350);
+  assert.equal(summary.count, 2);
+  assert.deepEqual(
+    Array.from(finance.dailyRange(state, "2026-10-31", "2026-11-01"), (day) => [
+      day.date,
+      day.income,
+      day.expense,
+    ]),
+    [
+      ["2026-10-31", 0, 600],
+      ["2026-11-01", 250, 0],
+    ],
+  );
 });

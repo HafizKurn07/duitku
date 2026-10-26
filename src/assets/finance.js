@@ -38,6 +38,25 @@
     type: "expense",
   };
 
+  function targetMovements(state) {
+    return (state.targets || []).flatMap((target) =>
+      (target.contribs || []).map((contribution) => ({
+        id: contribution.id,
+        type: contribution.type === "in" ? "expense" : "income",
+        amount: contribution.amount,
+        date: contribution.date,
+        categoryId: `target:${target.id}`,
+        targetId: target.id,
+        targetName: target.name,
+        targetEmoji: target.emoji,
+        targetColor: target.color,
+        walletId: contribution.walletId,
+        note: contribution.note,
+        isTargetContribution: true,
+      })),
+    );
+  }
+
   function summarizeMonth(state, month) {
     let income = 0;
     let expense = 0;
@@ -58,12 +77,12 @@
       }
     }
 
-    for (const target of state.targets) {
-      for (const contribution of target.contribs || []) {
-        if (contribution.date.startsWith(month)) {
-          saved += contribution.type === "in" ? contribution.amount : -contribution.amount;
-        }
-      }
+    for (const movement of targetMovements(state)) {
+      if (!movement.date.startsWith(month)) continue;
+      if (movement.type === "expense") expense += movement.amount;
+      else income += movement.amount;
+      saved += movement.type === "expense" ? movement.amount : -movement.amount;
+      count += 1;
     }
 
     const net = income - expense;
@@ -78,8 +97,24 @@
     };
   }
 
+  function monthlyBudgetRemaining(state, month, limit, spent) {
+    return (Number(limit) || 0) - (Number(spent) || 0) - summarizeMonth(state, month).saved;
+  }
+
   function categoryBreakdown(state, month, type = "expense") {
-    const categories = new Map(state.categories.map((category) => [category.id, category]));
+    const categories = new Map((state.categories || []).map((category) => [category.id, category]));
+    const targetCategories = new Map(
+      (state.targets || []).map((target) => [
+        `target:${target.id}`,
+        {
+          id: `target:${target.id}`,
+          name: target.name || "Target tabungan",
+          emoji: target.emoji || "🎯",
+          color: target.color || "#8B7CFF",
+          type,
+        },
+      ]),
+    );
     const totals = new Map();
     let monthTotal = 0;
 
@@ -103,12 +138,19 @@
       monthTotal += transaction.amount;
     }
 
+    for (const movement of targetMovements(state)) {
+      if (movement.type !== type || !movement.date.startsWith(month)) continue;
+      totals.set(movement.categoryId, (totals.get(movement.categoryId) || 0) + movement.amount);
+      monthTotal += movement.amount;
+    }
+
     return [...totals.entries()]
       .map(([categoryId, total]) => ({
         cat:
           categoryId === transferFeeCategory.id
             ? transferFeeCategory
-            : categories.get(categoryId) || {
+            : targetCategories.get(categoryId) ||
+              categories.get(categoryId) || {
                 id: categoryId,
                 name: "Lainnya",
                 emoji: "✨",
@@ -183,14 +225,18 @@
       month.count += 1;
     }
 
-    for (const target of state.targets) {
-      for (const contribution of target.contribs || []) {
-        if (!contribution.date.startsWith(yearPrefix)) continue;
-        const month = months[Number(contribution.date.slice(5, 7)) - 1];
-        if (month) {
-          month.saved += contribution.type === "in" ? contribution.amount : -contribution.amount;
-        }
+    for (const movement of targetMovements(state)) {
+      if (!movement.date.startsWith(yearPrefix)) continue;
+      const month = months[Number(movement.date.slice(5, 7)) - 1];
+      if (!month) continue;
+      if (movement.type === "expense") {
+        month.expense += movement.amount;
+        month.saved += movement.amount;
+      } else {
+        month.income += movement.amount;
+        month.saved -= movement.amount;
       }
+      month.count += 1;
     }
 
     for (const month of months) {
@@ -263,6 +309,12 @@
       if (days[dayIndex]) days[dayIndex].total += amount;
     }
 
+    for (const movement of targetMovements(state)) {
+      if (movement.type !== "expense" || !movement.date.startsWith(month)) continue;
+      const dayIndex = Number(movement.date.slice(8, 10)) - 1;
+      if (days[dayIndex]) days[dayIndex].total += movement.amount;
+    }
+
     const top = days.reduce(
       (selected, day) =>
         day.total > 0 && (!selected || day.total > selected.total) ? day : selected,
@@ -294,6 +346,11 @@
       totalsByDate.set(transaction.date, (totalsByDate.get(transaction.date) || 0) + amount);
     }
 
+    for (const movement of targetMovements(state)) {
+      if (movement.type !== "expense") continue;
+      totalsByDate.set(movement.date, (totalsByDate.get(movement.date) || 0) + movement.amount);
+    }
+
     const days = [];
     for (let offset = 6; offset >= 0; offset -= 1) {
       const date = new Date(lastDay.getFullYear(), lastDay.getMonth(), lastDay.getDate() - offset);
@@ -313,7 +370,7 @@
   }
 
   function topExpenses(state, month, limit = 5) {
-    return state.transactions
+    const transactions = state.transactions
       .filter(
         (transaction) =>
           (transaction.type === "expense" ||
@@ -331,7 +388,15 @@
               isTransferFee: true,
             }
           : transaction,
-      )
+      );
+    const contributions = targetMovements(state)
+      .filter((movement) => movement.type === "expense" && movement.date.startsWith(month))
+      .map((movement) => ({
+        ...movement,
+        expenseNote: movement.note || `Setoran ${movement.targetName || "target tabungan"}`,
+      }));
+
+    return [...transactions, ...contributions]
       .sort((left, right) => right.amount - left.amount || right.date.localeCompare(left.date))
       .slice(0, limit);
   }
@@ -444,12 +509,16 @@
       }
     }
 
-    for (const target of state.targets) {
-      for (const contribution of target.contribs || []) {
-        if (isInRange(contribution.date)) {
-          summary.saved += contribution.type === "in" ? contribution.amount : -contribution.amount;
-        }
+    for (const movement of targetMovements(state)) {
+      if (!isInRange(movement.date)) continue;
+      if (movement.type === "expense") {
+        summary.expense += movement.amount;
+        summary.saved += movement.amount;
+      } else {
+        summary.income += movement.amount;
+        summary.saved -= movement.amount;
       }
+      summary.count += 1;
     }
 
     summary.net = summary.income - summary.expense;
@@ -478,6 +547,12 @@
       else if (transaction.type === "expense") day.expense += transaction.amount;
       else if (transaction.type === "transfer") day.expense += Number(transaction.feeAmount) || 0;
     }
+
+    for (const movement of targetMovements(state)) {
+      const day = totals.get(movement.date);
+      if (!day) continue;
+      day[movement.type] += movement.amount;
+    }
     days.push(...totals.values());
     return days;
   }
@@ -488,6 +563,7 @@
 
   root.DuitkuFinance = {
     summarizeMonth,
+    monthlyBudgetRemaining,
     categoryBreakdown,
     targetSaved,
     walletBalance,

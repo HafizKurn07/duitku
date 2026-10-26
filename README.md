@@ -37,6 +37,8 @@ Do not edit files in `dist/` or `legacy-deploy/`; make changes in `src/` and reb
 - `src/assets/finance.js` contains the readable monthly/yearly summaries, category breakdown, daily/weekly chart data, top expenses, transaction changes, target savings, and wallet balance calculations used by the app. The build checks that the application bundle delegates to these tested functions.
 - `src/assets/wallets.js` defines only the three general wallet types—cash, bank, and e-wallet—and normalizes existing wallet records without changing their balances.
 - Transfers between wallets are recorded separately from income and spending. Optional transfer fees reduce the source wallet and appear as expenses in reports.
+- Net target contributions reduce the monthly budget remaining and the safe-per-day amount; target withdrawals offset that reduction.
+- Target deposits are reported as expenses and withdrawals as income in daily, weekly, monthly, and yearly reports; target names appear in category breakdowns. These movements are reporting-only and do not create duplicate wallet transactions.
 - Reports provide daily and weekly date-filtered summaries, along with the existing monthly and yearly views.
 - `src/assets/backup.js` provides readable backup JSON export, backup file validation, and download handling. Excel workbook mapping remains in the recovered app bundle because it depends on the original app's data model.
 - `src/tests/backup.test.mjs` covers JSON export/import, malformed and oversized files, format dispatch, and skipped rows.

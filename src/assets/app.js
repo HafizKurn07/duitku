@@ -4374,15 +4374,26 @@ ${
         ((this.year += t), (this.ySelIndex = null));
       },
       catOf(t) {
-        return (
-          this.state.categories.find((e) => e.id === t) || {
-            id: "x",
-            name: "Lainnya",
-            emoji: "\u2728",
-            color: "#94A3B8",
-            type: "expense",
-          }
-        );
+        const category = this.state.categories.find((e) => e.id === t);
+        if (category) return category;
+        if (String(t).startsWith("target:")) {
+          const target = this.state.targets.find((e) => `target:${e.id}` === t);
+          if (target)
+            return {
+              id: t,
+              name: target.name,
+              emoji: target.emoji || "\u{1F3AF}",
+              color: target.color || "#8B7CFF",
+              type: "expense",
+            };
+        }
+        return {
+          id: "x",
+          name: "Lainnya",
+          emoji: "\u2728",
+          color: "#94A3B8",
+          type: "expense",
+        };
       },
       walletOf(t) {
         return this.state.wallets.find((e) => e.id === t) || { name: "-", emoji: "\u{1F4B3}" };
@@ -4607,7 +4618,14 @@ ${
         if (!t) return null;
         let e = new Date(),
           n = pt(this.month) - e.getDate() + 1;
-        return (t - this.budgetRows.reduce((r, i) => r + i.spent, 0)) / n;
+        return (
+          window.DuitkuFinance.monthlyBudgetRemaining(
+            this.state,
+            this.month,
+            t,
+            this.budgetRows.reduce((r, i) => r + i.spent, 0),
+          ) / n
+        );
       },
       get daily() {
         return $("daily", [this.month, this.rev], () => ui(this.state, this.month));
@@ -4857,6 +4875,11 @@ ${
           }));
       },
       openEdit(t) {
+        if (t.isTargetContribution) {
+          this.go("targets");
+          this.detailId = t.targetId;
+          return;
+        }
         ((this.form = {
           ...t,
           amount: Et(t.amount),

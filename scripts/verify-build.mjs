@@ -55,6 +55,10 @@ async function verify() {
     "application uses the tested monthly calculation module",
   );
   assert.ok(
+    appScript.includes("DuitkuFinance.monthlyBudgetRemaining"),
+    "application uses target contributions in its monthly budget calculation",
+  );
+  assert.ok(
     appScript.includes("DuitkuFinance.summarizeYear"),
     "application uses the tested annual calculation module",
   );
