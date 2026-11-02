@@ -35,8 +35,15 @@ Do not edit files in `dist/` or `legacy-deploy/`; make changes in `src/` and reb
 - `src/index.html` is the recovered application markup.
 - `src/assets/app.css` and `src/assets/app.js` are the CSS and JavaScript bundles copied from the deployed app. The JavaScript bundle is formatted for readability, but its generated identifiers and original bundled structure remain because the modular source code was not available.
 - `src/assets/finance.js` contains the readable monthly/yearly summaries, category breakdown, daily/weekly chart data, top expenses, transaction changes, target savings, and wallet balance calculations used by the app. The build checks that the application bundle delegates to these tested functions.
-- `src/assets/wallets.js` defines only the three general wallet types—cash, bank, and e-wallet—and normalizes existing wallet records without changing their balances.
+- `src/assets/wallets.js` defines only the three general wallet types—cash, bank, and e-wallet—and preserves an optional validated opening-balance date.
 - Transfers between wallets are recorded separately from income and spending. Optional transfer fees reduce the source wallet and appear as expenses in reports.
+- Monthly summaries keep income, expenses, and net change for the selected month separate from the carried opening and closing balances across tracked wallets.
+- New wallets have an effective date for their opening balance; existing wallets without a date preserve their previous historical behavior.
+- Income and expense transactions can optionally record the other party's name, bank, and last four account digits. This metadata is retained in JSON backups and does not affect wallet balances or reports.
+- Wallet setup uses a short nickname and opening balance, avoids collecting full account numbers or PINs, and prevents deleting a wallet until its balance is zero.
+- Transaction search includes notes, categories, counterparty names, banks, and the saved last four account digits.
+- Excel transaction exports include counterparty fields, and wallet exports include the opening-balance date. Excel is a reporting export; use JSON for complete backup and restore.
+- App data remains in the current browser's local storage and does not sync automatically. Keep periodic JSON backups in a secure personal location.
 - Net target contributions reduce the monthly budget remaining and the safe-per-day amount; target withdrawals offset that reduction.
 - Target deposits are reported as expenses and withdrawals as income in daily, weekly, monthly, and yearly reports; target names appear in category breakdowns. These movements are reporting-only and do not create duplicate wallet transactions.
 - Reports provide daily and weekly date-filtered summaries, along with the existing monthly and yearly views.

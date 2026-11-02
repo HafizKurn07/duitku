@@ -46,3 +46,15 @@ test("wallet normalization preserves wallet data and drops provider metadata", (
     },
   );
 });
+
+test("wallet normalization preserves only valid opening dates", () => {
+  assert.equal(
+    wallets.normalize({ name: "BCA", openingDate: "2026-10-15" }).openingDate,
+    "2026-10-15",
+  );
+  assert.equal(
+    "openingDate" in wallets.normalize({ name: "Bank", openingDate: "2026-02-30" }),
+    false,
+  );
+  assert.equal("openingDate" in wallets.normalize({ name: "Tunai" }), false);
+});

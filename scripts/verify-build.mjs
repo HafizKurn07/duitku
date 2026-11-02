@@ -79,6 +79,18 @@ async function verify() {
     "application uses the tested transaction save workflow",
   );
   assert.ok(
+    appScript.includes("Nama Pihak"),
+    "Excel exports include transaction counterparty names",
+  );
+  assert.ok(
+    appScript.includes("4 Digit Rekening"),
+    "Excel exports include last four account digits",
+  );
+  assert.ok(
+    appScript.includes("Tanggal Mulai Saldo"),
+    "Excel exports include wallet opening dates",
+  );
+  assert.ok(
     appScript.includes("DuitkuFinance.removeTransaction"),
     "application uses the tested transaction delete workflow",
   );

@@ -3632,6 +3632,7 @@ ${
         emoji: L(i(f).emoji, "\u{1F4B3}"),
         kind: i(f).kind,
         initial: te(i(f).initial),
+        ...(J(i(f).openingDate) ? { openingDate: i(f).openingDate } : {}),
       }),
     )),
       a.wallets.length || (a.wallets = e.wallets));
@@ -3687,6 +3688,11 @@ ${
         continue;
       }
       let E = l.get(c.categoryId) || p(y);
+      const counterpartyName = G(c.counterpartyName, 40),
+        counterpartyBank = G(c.counterpartyBank, 40),
+        counterpartyAccountLast4 = String(c.counterpartyAccountLast4 || "")
+          .replace(/\D/g, "")
+          .slice(0, 4);
       a.transactions.push({
         id: m(c.id),
         type: y,
@@ -3695,6 +3701,9 @@ ${
         walletId: d.has(c.walletId) ? c.walletId : a.wallets[0].id,
         date: c.date,
         note: G(c.note, 120),
+        ...(counterpartyName ? { counterpartyName } : {}),
+        ...(counterpartyBank ? { counterpartyBank } : {}),
+        ...(counterpartyAccountLast4 ? { counterpartyAccountLast4 } : {}),
         ts: Mn(c.ts),
       });
     }
@@ -3832,8 +3841,11 @@ ${
             "Nominal",
             "Biaya Admin",
             "Catatan",
+            "Nama Pihak",
+            "Bank Pihak",
+            "4 Digit Rekening",
           ],
-          widths: [12, 13, 20, 18, 18, 15, 15, 36],
+          widths: [12, 13, 20, 18, 18, 15, 15, 30, 24, 20, 18],
           money: [5, 6],
           filter: !0,
           rows: [...t.transactions]
@@ -3847,6 +3859,9 @@ ${
               h.amount,
               h.type === "transfer" ? Number(h.feeAmount) || 0 : "",
               h.note || "",
+              h.counterpartyName || "",
+              h.counterpartyBank || "",
+              h.counterpartyAccountLast4 || "",
             ]),
         },
         {
@@ -3876,10 +3891,16 @@ ${
         },
         {
           name: z.wallets,
-          head: ["Nama", "Ikon", "Saldo Awal", "Jenis Dompet"],
-          widths: [24, 8, 16, 16],
+          head: ["Nama", "Ikon", "Saldo Awal", "Tanggal Mulai Saldo", "Jenis Dompet"],
+          widths: [24, 8, 16, 20, 16],
           money: [2],
-          rows: t.wallets.map((h) => [n.get(h.id), h.emoji, h.initial, h.kind || ""]),
+          rows: t.wallets.map((h) => [
+            n.get(h.id),
+            h.emoji,
+            h.initial,
+            h.openingDate || "",
+            h.kind || "",
+          ]),
         },
         {
           name: z.cats,
@@ -4239,7 +4260,7 @@ ${
       txPageSize: 50,
       toast: "",
       busy: "",
-      newWallet: { kind: "cash", name: "", initial: "" },
+      newWallet: { kind: "cash", name: "", initial: "", openingDate: U(new Date()) },
       newCat: { emoji: "\u{1F3F7}\uFE0F", name: "", type: "expense" },
       detailId: null,
       tSheet: !1,
@@ -4401,6 +4422,16 @@ ${
       walletName(t) {
         const wallet = typeof t === "string" ? this.walletOf(t) : t;
         return `${wallet.emoji} ${wallet.name}`;
+      },
+      counterpartyLabel(t) {
+        const details = [
+          t.counterpartyName,
+          t.counterpartyBank,
+          t.counterpartyAccountLast4 ? `•••• ${t.counterpartyAccountLast4}` : "",
+        ].filter(Boolean);
+        return details.length
+          ? `${t.type === "income" ? "Dari" : "Kepada"} ${details.join(" · ")}`
+          : "";
       },
       walletMark(t) {
         return window.DuitkuWallets.kinds.find((kind) => kind.id === t.kind)?.mark || "BK";
@@ -4569,15 +4600,19 @@ ${
       },
       get rateMsg() {
         let t = this.mStats.rate;
+        const period = this.monthLabelLong,
+          isCurrentMonth = this.month === D(new Date());
         return t === null
           ? this.mStats.expense
-            ? "Belum ada pemasukan bulan ini."
-            : "Catat transaksi pertamamu untuk mulai menghitung."
+            ? `Belum ada pemasukan pada ${period}.`
+            : isCurrentMonth
+              ? "Catat transaksi pertamamu untuk mulai menghitung."
+              : `Belum ada transaksi pada ${period}.`
           : t < 0
-            ? "Pengeluaran melebihi pemasukan bulan ini."
+            ? `Pengeluaran melebihi pemasukan pada ${period}.`
             : t >= 0.2
-              ? "Di atas patokan 20%. Pertahankan."
-              : "Naikkan sedikit untuk mencapai patokan 20%.";
+              ? `Rasio ${period} di atas patokan 20%. Pertahankan.`
+              : `Rasio ${period} masih di bawah patokan 20%.`;
       },
       get trend() {
         return $("trend", [this.month, this.rev], () =>
@@ -4861,6 +4896,9 @@ ${
           feeAmount: "",
           date: U(new Date()),
           note: "",
+          counterpartyName: "",
+          counterpartyBank: "",
+          counterpartyAccountLast4: "",
           ts: 0,
         }),
           (this.formError = ""));
@@ -4950,6 +4988,9 @@ ${
         if (!t) return this.say("Isi nama dompet dulu");
         if (this.state.wallets.some((e) => e.name.toLowerCase() === t.toLowerCase()))
           return this.say("Nama dompet sudah dipakai");
+        if (!J(this.newWallet.openingDate)) return this.say("Pilih tanggal mulai saldo yang valid");
+        if (this.newWallet.openingDate > U(new Date()))
+          return this.say("Tanggal mulai saldo tidak boleh di masa depan");
         (this.state.wallets.push({
           id: C(),
           name: t,
@@ -4961,8 +5002,9 @@ ${
                 : "\u{1F4F1}",
           kind: this.newWallet.kind,
           initial: Number(String(this.newWallet.initial).replace(/\D/g, "")) || 0,
+          openingDate: this.newWallet.openingDate,
         }),
-          (this.newWallet = { kind: "cash", name: "", initial: "" }),
+          (this.newWallet = { kind: "cash", name: "", initial: "", openingDate: U(new Date()) }),
           this.persist(),
           this.say("Dompet ditambahkan"));
       },
@@ -4975,6 +5017,10 @@ ${
           this.state.targets.some((e) => e.contribs.some((n) => n.walletId === t.id))
         )
           return this.say("Dompet masih dipakai transaksi");
+        if (this.walletBalance(t) !== 0)
+          return this.say(
+            "Saldo dompet harus Rp 0 sebelum dihapus. Pindahkan atau catat sisa saldo terlebih dahulu.",
+          );
         (await this.ask({ title: `Hapus dompet ${t.name}?`, ok: "Hapus", danger: !0 })) &&
           ((this.state.wallets = this.state.wallets.filter((e) => e.id !== t.id)), this.persist());
       },

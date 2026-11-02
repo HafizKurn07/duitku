@@ -61,7 +61,7 @@
       <div class="relative">
         <div class="flex items-center justify-between gap-2">
           <div class="flex items-center gap-1.5">
-            <p class="text-sm font-semibold text-white/85">Total saldo</p>
+            <p class="text-sm font-semibold text-white/85">Saldo saat ini</p>
             <button @click="toggleHide()" class="w-8 h-8 rounded-full grid place-items-center text-white/85 active:bg-white/20" :aria-label="state.hideBalance?'Tampilkan saldo':'Sembunyikan saldo'"><svg class="ic !w-[18px] !h-[18px]"><use :href="state.hideBalance?'#i-eye-off':'#i-eye'"/></svg></button>
           </div>
           <div class="monthpill glass">
@@ -84,17 +84,18 @@
       </div>
     </section>
 
-    <!-- Sisa bulan ini -->
-    <section class="card p-5 flex items-center gap-5" aria-label="Sisa bulan ini">
+    <!-- Saldo akhir bulan terpilih -->
+    <section class="card p-5 flex items-center gap-5" aria-label="Saldo akhir bulan dan rasio tabung">
       <div class="w-[88px] h-[88px] shrink-0 rounded-full grid place-items-center" :style="ringStyle(mStats.rate)">
         <div class="w-[68px] h-[68px] rounded-full bg-white dark:bg-panel grid place-items-center text-center">
-          <div><p class="text-base font-extrabold num leading-5" x-text="rateText(mStats.rate)"></p><p class="text-[10px] opacity-60 leading-3">tersisa</p></div>
+          <div><p class="text-base font-extrabold num leading-5" x-text="rateText(mStats.rate)"></p><p class="text-[10px] opacity-60 leading-3">rasio</p></div>
         </div>
       </div>
       <div class="min-w-0 flex-1">
-        <p class="label">Sisa bulan ini</p>
-        <p class="text-xl font-extrabold num truncate" :class="mStats.net<0?'t-exp':''" x-text="hide(rp(mStats.net))"></p>
+        <p class="label">Saldo akhir bulan</p>
+        <p class="text-xl font-extrabold num truncate" :class="mStats.closingBalance<0?'t-exp':''" x-text="hide(rp(mStats.closingBalance))"></p>
         <p class="text-xs mt-1 opacity-70" x-text="rateMsg"></p>
+        <p class="text-[11px] mt-1 opacity-60 num" x-text="'Saldo awal '+compact(mStats.openingBalance)+' · selisih '+compact(mStats.net)"></p>
       </div>
     </section>
 
@@ -174,6 +175,7 @@
             <span class="flex-1 min-w-0">
               <span class="block font-bold text-sm truncate" x-text="t.note || (t.type==='transfer'?'Transfer':catOf(t.categoryId).name)"></span>
               <span class="block text-[11px] opacity-60 truncate" x-text="t.type==='transfer' ? walletOf(t.walletId).name+' → '+walletOf(t.toWalletId).name : catOf(t.categoryId).name+' · '+walletOf(t.walletId).name"></span>
+              <span x-show="t.type!=='transfer' && counterpartyLabel(t)" class="block text-[10px] opacity-50 truncate" x-text="counterpartyLabel(t)"></span>
             </span>
             <span class="font-extrabold text-sm num shrink-0" :class="t.type==='income'?'t-inc':t.type==='transfer'?'opacity-70':''" x-text="t.type==='transfer'?rp(t.amount):(t.type==='income'?'+':'-')+rp(t.amount)"></span>
           </button>
@@ -201,7 +203,7 @@
     </header>
     <div class="relative">
       <svg class="ic !w-4 !h-4 absolute left-4 top-1/2 -translate-y-1/2 opacity-40 pointer-events-none"><use href="#i-search"/></svg>
-      <input x-model.debounce.200ms="search" @input="txPage=0" type="search" placeholder="Cari catatan atau kategori" aria-label="Cari transaksi" class="field field-on-card !pl-11 shadow-card">
+      <input x-model.debounce.200ms="search" @input="txPage=0" type="search" placeholder="Cari catatan, kategori, atau pihak" aria-label="Cari catatan, kategori, nama pihak, bank, atau empat digit akhir rekening" class="field field-on-card !pl-11 shadow-card">
     </div>
     <div class="flex gap-2 overflow-x-auto no-scrollbar">
     <template x-for="f in [['all','Semua'],['expense','Keluar'],['income','Masuk'],['transfer','Transfer']]" :key="f[0]">
@@ -225,6 +227,7 @@
               <span class="flex-1 min-w-0">
                 <span class="block font-bold text-sm truncate" x-text="t.note || (t.type==='transfer'?'Transfer':catOf(t.categoryId).name)"></span>
                 <span class="block text-[11px] opacity-60 truncate" x-text="t.type==='transfer' ? walletOf(t.walletId).name+' → '+walletOf(t.toWalletId).name+(t.feeAmount?' · biaya '+rp(t.feeAmount):'') : catOf(t.categoryId).name+' · '+walletOf(t.walletId).name"></span>
+                <span x-show="t.type!=='transfer' && counterpartyLabel(t)" class="block text-[10px] opacity-50 truncate" x-text="counterpartyLabel(t)"></span>
               </span>
               <span class="font-extrabold text-sm num shrink-0" :class="t.type==='income'?'t-inc':t.type==='transfer'?'opacity-70':''" x-text="t.type==='transfer'?rp(t.amount):(t.type==='income'?'+':'-')+rp(t.amount)"></span>
             </button>
@@ -309,7 +312,7 @@
         <button @click="shiftYear(1)" aria-label="Tahun berikutnya"><svg class="ic !w-4 !h-4"><use href="#i-chevron-right"/></svg></button>
       </div>
     </header>
-    <div class="seg" role="tablist" aria-label="Rentang analisis">
+    <div class="seg" role="tablist" aria-label="Rentang analisis" style="grid-template-columns:repeat(4,minmax(0,1fr))">
       <button role="tab" :aria-selected="repMode==='day'" :class="repMode==='day'?'on':''" @click="repMode='day'">Harian</button>
       <button role="tab" :aria-selected="repMode==='week'" :class="repMode==='week'?'on':''" @click="repMode='week'">Mingguan</button>
       <button role="tab" :aria-selected="repMode==='month'" :class="repMode==='month'?'on':''" @click="repMode='month'">Bulanan</button>
@@ -371,6 +374,17 @@
           <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full c-sav"></span><span class="label">Ditabung ke target</span></div>
           <p class="text-[17px] font-extrabold num mt-2 truncate" x-text="rp(mStats.saved)"></p>
           <p class="text-[11px] font-semibold mt-1 flex items-center gap-1" :class="deltas.saved.cls"><svg x-show="deltas.saved.icon" class="ic !w-3.5 !h-3.5"><use :href="'#i-'+deltas.saved.icon"/></svg><span x-text="deltas.saved.text"></span></p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div class="card p-4 min-w-0">
+          <p class="label">Saldo awal bulan</p>
+          <p class="text-[17px] font-extrabold num mt-2 truncate" :class="mStats.openingBalance<0?'t-exp':''" x-text="rp(mStats.openingBalance)"></p>
+        </div>
+        <div class="card p-4 min-w-0">
+          <p class="label">Saldo akhir bulan</p>
+          <p class="text-[17px] font-extrabold num mt-2 truncate" :class="mStats.closingBalance<0?'t-exp':''" x-text="rp(mStats.closingBalance)"></p>
         </div>
       </div>
 
@@ -603,10 +617,13 @@
 
   <!-- ===================== PENGATURAN ===================== -->
   <template x-if="tab==='settings'">
-  <main class="px-5 pt-[max(env(safe-area-inset-top),20px)] space-y-5">
+  <main class="px-5 pt-[max(env(safe-area-inset-top),20px)] space-y-5" style="padding-bottom:calc(env(safe-area-inset-bottom) + 104px)">
     <header class="flex items-center gap-3 h-11">
       <button @click="go('home')" class="iconbtn" aria-label="Kembali ke beranda"><svg class="ic"><use href="#i-chevron-left"/></svg></button>
-      <h1 class="text-[22px] font-extrabold">Pengaturan</h1>
+      <div>
+        <h1 class="text-[22px] font-extrabold leading-6">Pengaturan</h1>
+        <p class="text-[11px] opacity-60 mt-0.5">Atur dompet, tampilan, dan cadangan data.</p>
+      </div>
     </header>
 
     <section class="card p-5 space-y-4">
@@ -625,7 +642,10 @@
     </section>
 
     <section class="card p-5">
-      <h2 class="font-bold mb-3">Dompet</h2>
+      <div class="mb-4">
+        <h2 class="font-bold">Dompet</h2>
+        <p class="text-xs opacity-60 mt-1">Saldo setiap rekening atau tempat penyimpanan uang.</p>
+      </div>
       <ul class="space-y-3">
         <template x-for="w in state.wallets" :key="w.id">
           <li class="flex items-center gap-3 text-sm">
@@ -636,18 +656,39 @@
           </li>
         </template>
       </ul>
-      <form class="grid grid-cols-[100px_1fr_104px_48px] gap-2 mt-4" @submit.prevent="addWallet()">
-        <select x-model="newWallet.kind" @change="changeWalletKind()" aria-label="Jenis dompet" class="field !px-2 text-xs">
-          <option value="cash">Tunai</option><option value="bank">Bank</option><option value="ewallet">E-wallet</option>
-        </select>
-        <input x-model="newWallet.name" placeholder="Nama dompet" aria-label="Nama dompet" maxlength="24" class="field min-w-0">
-        <input x-model="newWallet.initial" inputmode="numeric" placeholder="Saldo awal" aria-label="Saldo awal" class="field min-w-0 !px-3">
-        <button type="submit" class="h-12 rounded-2xl bg-brand text-white grid place-items-center" aria-label="Tambah dompet"><svg class="ic"><use href="#i-plus"/></svg></button>
+      <form class="grid grid-cols-2 gap-3 mt-4" @submit.prevent="addWallet()">
+        <div>
+          <label class="label" for="wallet-kind">Jenis dompet</label>
+          <select id="wallet-kind" x-model="newWallet.kind" @change="changeWalletKind()" class="field mt-2 !px-2 text-xs">
+            <option value="cash">Tunai</option><option value="bank">Bank</option><option value="ewallet">E-wallet</option>
+          </select>
+        </div>
+        <div>
+          <label class="label" for="wallet-name">Nama singkat</label>
+          <input id="wallet-name" x-model="newWallet.name" placeholder="Contoh: BCA utama" maxlength="24" autocomplete="off" class="field mt-2 min-w-0">
+        </div>
+        <p class="col-span-2 -mt-1 text-[11px] opacity-60">Gunakan nama pengenal saja; jangan masukkan nomor rekening atau PIN.</p>
+        <div>
+          <label class="label" for="wallet-initial">Saldo awal</label>
+          <div class="relative mt-2">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold opacity-50">Rp</span>
+            <input id="wallet-initial" x-model="newWallet.initial" @input="newWallet.initial=fmtInput($event.target.value)" inputmode="numeric" autocomplete="off" placeholder="0" aria-describedby="wallet-balance-help" class="field min-w-0 !pl-10 num">
+          </div>
+        </div>
+        <div class="col-span-2">
+          <label class="label" for="wallet-opening-date">Tanggal saldo awal berlaku</label>
+          <input id="wallet-opening-date" type="date" x-model="newWallet.openingDate" :max="todayStr" class="field mt-2">
+          <p id="wallet-balance-help" class="mt-1 text-[11px] opacity-60">Saldo awal akan masuk ke riwayat mulai tanggal ini. Dompet lama tanpa tanggal tetap mengikuti riwayat sebelumnya.</p>
+        </div>
+        <button type="submit" class="btn btn-primary col-span-2 w-full" aria-label="Tambah dompet"><svg class="ic"><use href="#i-plus"/></svg><span>Tambah dompet</span></button>
       </form>
     </section>
 
     <section class="card p-5">
-      <h2 class="font-bold mb-3">Kategori</h2>
+      <div class="mb-4">
+        <h2 class="font-bold">Kategori</h2>
+        <p class="text-xs opacity-60 mt-1">Kelompokkan pemasukan dan pengeluaran.</p>
+      </div>
       <div class="flex flex-wrap gap-2">
         <template x-for="c in state.categories" :key="c.id">
           <span class="inline-flex items-center gap-1.5 h-9 rounded-full pl-3 pr-1 text-xs font-semibold bg-canvas dark:bg-night">
@@ -657,28 +698,45 @@
           </span>
         </template>
       </div>
-      <form class="grid grid-cols-[52px_1fr_104px_48px] gap-2 mt-4" @submit.prevent="addCat()">
-        <input x-model="newCat.emoji" @change="newCat.emoji = grapheme(newCat.emoji,'🏷️')" aria-label="Ikon kategori" class="field !px-0 text-center">
-        <input x-model="newCat.name" placeholder="Nama kategori" aria-label="Nama kategori" maxlength="24" class="field min-w-0">
-        <select x-model="newCat.type" aria-label="Jenis kategori" class="field !px-3"><option value="expense">Keluar</option><option value="income">Masuk</option></select>
-        <button type="submit" class="h-12 rounded-2xl bg-brand text-white grid place-items-center" aria-label="Tambah kategori"><svg class="ic"><use href="#i-plus"/></svg></button>
+      <form class="grid grid-cols-[56px_minmax(0,1fr)] gap-3 mt-5" @submit.prevent="addCat()">
+        <div>
+          <label class="label" for="category-emoji">Ikon</label>
+          <input id="category-emoji" x-model="newCat.emoji" @change="newCat.emoji = grapheme(newCat.emoji,'🏷️')" class="field mt-2 !px-0 text-center">
+        </div>
+        <div>
+          <label class="label" for="category-name">Nama kategori</label>
+          <input id="category-name" x-model="newCat.name" placeholder="Contoh: Belanja bulanan" aria-label="Nama kategori" maxlength="24" class="field mt-2 min-w-0">
+        </div>
+        <div>
+          <label class="label" for="category-type">Jenis</label>
+          <select id="category-type" x-model="newCat.type" class="field mt-2 !px-3"><option value="expense">Pengeluaran</option><option value="income">Pemasukan</option></select>
+        </div>
+        <div class="flex items-end">
+          <button type="submit" class="btn btn-primary w-full"><svg class="ic"><use href="#i-plus"/></svg><span>Tambah kategori</span></button>
+        </div>
       </form>
     </section>
 
     <section class="card p-5 space-y-3">
       <div>
-        <h2 class="font-bold">Data</h2>
-        <p class="text-xs opacity-60 mt-0.5 num" x-text="dataSummary"></p>
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h2 class="font-bold">Data dan cadangan</h2>
+            <p class="text-xs opacity-60 mt-1">Data disimpan di browser ini · <span class="num" x-text="dataSummary"></span></p>
+          </div>
+          <svg class="ic opacity-50 shrink-0" aria-hidden="true"><use href="#i-shield-check"/></svg>
+        </div>
       </div>
       <button class="btn btn-lime w-full" @click="exportExcel()" :disabled="!!busy"><svg class="ic"><use href="#i-file-spreadsheet"/></svg><span x-text="busy==='export' ? 'Menyiapkan file…' : 'Ekspor ke Excel'"></span></button>
       <p class="text-[11px] opacity-60 -mt-1">Berisi semua transaksi, target, setoran, dompet, kategori, anggaran, dan ringkasan bulanan. <span x-text="lastExportText"></span>.</p>
       <button class="btn btn-soft w-full" @click="exportJSON()" :disabled="!!busy"><svg class="ic"><use href="#i-download"/></svg><span x-text="busy==='json-export' ? 'Menyiapkan file…' : 'Ekspor backup JSON'"></span></button>
-      <p class="text-[11px] opacity-60 -mt-1">Simpan salinan lengkap data Duitku dalam format JSON.</p>
+      <p class="text-[11px] opacity-60 -mt-1">JSON adalah backup lengkap, termasuk transaksi, saldo awal, tanggal mulai saldo, dan detail pihak terkait. Simpan di tempat pribadi yang aman dan buat backup secara berkala.</p>
       <label class="btn btn-soft w-full cursor-pointer focus-within:ring-2 focus-within:ring-brand">
         <svg class="ic"><use href="#i-upload"/></svg><span x-text="busy==='import' ? 'Membaca file…' : 'Impor backup'"></span>
         <input type="file" accept=".xlsx,.xls,.json" class="sr-only" @change="importBackup($event)">
       </label>
-      <p class="text-[11px] opacity-60 -mt-1">Pilih backup Excel atau JSON dari Duitku. Isi file akan diperiksa sebelum dipulihkan. Data yang ada sekarang hanya diganti setelah kamu menyetujuinya.</p>
+      <p class="text-[11px] opacity-60 -mt-1">Pilih backup Excel atau JSON dari Duitku. Impor akan mengganti data saat ini hanya setelah konfirmasi; ekspor Excel ditujukan untuk laporan, gunakan JSON untuk backup dan pemulihan lengkap.</p>
+      <p class="text-[11px] opacity-60">Data aplikasi tersimpan di browser/perangkat ini dan tidak tersinkron otomatis. Menghapus data browser atau berganti perangkat dapat menghilangkannya jika belum dicadangkan.</p>
       <button class="btn btn-danger w-full" @click="resetAll()"><svg class="ic"><use href="#i-trash-2"/></svg>Hapus semua data</button>
     </section>
 
@@ -707,7 +765,7 @@
     <div class="sheet w-full max-w-md bg-canvas dark:bg-night rounded-t-4xl max-h-[92dvh] flex flex-col">
       <div class="pt-3 pb-4 px-5"><div class="w-10 h-1.5 rounded-full bg-black/10 dark:bg-white/20 mx-auto"></div></div>
       <div class="px-5 overflow-y-auto no-scrollbar flex-1">
-        <div class="seg mb-6">
+        <div class="seg mb-6" style="grid-template-columns:repeat(3,minmax(0,1fr))">
           <button @click="setType('expense')" :class="form.type==='expense'?'on':''">Pengeluaran</button>
           <button @click="setType('income')" :class="form.type==='income'?'on':''">Pemasukan</button>
           <button @click="setType('transfer')" :class="form.type==='transfer'?'on':''">Transfer</button>
@@ -758,6 +816,24 @@
         <div class="flex gap-2 mb-3">
           <button type="button" class="chip" :class="form.date===todayStr?'on':''" @click="setDate('today')">Hari ini</button>
           <button type="button" class="chip" :class="form.date===yesterdayStr?'on':''" @click="setDate('yesterday')">Kemarin</button>
+        </div>
+        <div x-show="form.type!=='transfer'" class="space-y-2 mb-3">
+          <p class="label" x-text="form.type==='income'?'Dari pihak (opsional)':'Kepada pihak (opsional)'"></p>
+          <div class="space-y-2">
+            <div>
+              <label class="sr-only" for="counterparty-name" x-text="form.type==='income'?'Nama pengirim':'Nama penerima'"></label>
+              <input id="counterparty-name" x-model="form.counterpartyName" maxlength="40" placeholder="Nama pengirim/penerima (opsional)" :aria-label="form.type==='income'?'Nama pengirim':'Nama penerima'" autocomplete="off" class="field field-on-card">
+            </div>
+            <div>
+              <label class="sr-only" for="counterparty-bank">Bank pihak terkait</label>
+              <input id="counterparty-bank" x-model="form.counterpartyBank" maxlength="40" placeholder="Bank (opsional)" aria-label="Bank pihak terkait" autocomplete="off" class="field field-on-card">
+            </div>
+            <div>
+              <label class="sr-only" for="counterparty-last4">Empat digit akhir rekening</label>
+              <input id="counterparty-last4" x-model="form.counterpartyAccountLast4" @input="form.counterpartyAccountLast4=$event.target.value.replace(/\D/g,'').slice(0,4)" maxlength="4" inputmode="numeric" autocomplete="off" placeholder="4 digit akhir rekening (opsional)" aria-label="Empat digit akhir rekening pihak terkait" class="field field-on-card">
+            </div>
+          </div>
+          <p class="text-[10px] opacity-60">Semua detail ini opsional. Hanya empat digit terakhir yang disimpan, bukan nomor rekening lengkap. Data tersimpan di perangkat ini.</p>
         </div>
         <input x-model="form.note" maxlength="120" placeholder="Catatan (opsional)" aria-label="Catatan" class="field field-on-card mb-2">
         <p x-show="formError" class="text-xs font-semibold t-exp mt-2" role="alert" x-text="formError"></p>

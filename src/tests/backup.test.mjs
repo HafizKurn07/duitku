@@ -110,6 +110,30 @@ test("JSON backup round-trip preserves transfers between wallets and their fees"
   assert.equal(imported.report.skipped, 0);
 });
 
+test("JSON backup round-trip preserves wallet dates and counterparty details", async () => {
+  const state = {
+    ...validState,
+    wallets: [{ id: "wallet-1", initial: 1_000_000, openingDate: "2026-10-01" }],
+    transactions: [
+      {
+        id: "income-1",
+        type: "income",
+        amount: 100_000,
+        counterpartyName: "PT Contoh",
+        counterpartyBank: "Bank Nusantara",
+        counterpartyAccountLast4: "1234",
+      },
+    ],
+  };
+  const exported = backup.exportJSON(state, new Date("2026-10-22T00:00:00.000Z"));
+  const imported = await backup.readFile(fakeFile("backup.json", await exported.blob.text()), {
+    normalizeJson: (input) => ({ state: input, report: {} }),
+    readWorkbook: () => assert.fail("JSON input should not be sent to the workbook parser"),
+  });
+
+  assert.deepEqual(JSON.parse(JSON.stringify(imported.state)), state);
+});
+
 test("accepts legacy JSON app-state backups", async () => {
   const result = await backup.readFile(fakeFile("legacy.json", validState), {
     normalizeJson: (state) => ({ state, report: {} }),

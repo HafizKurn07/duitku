@@ -57,6 +57,38 @@
     );
   }
 
+  function balanceBeforeDate(state, exclusiveDate, includeInitialOnDate = false) {
+    const wallets = state.wallets || [];
+    let balance = wallets.reduce(
+      (total, wallet) =>
+        total +
+        (!wallet.openingDate ||
+        wallet.openingDate < exclusiveDate ||
+        (includeInitialOnDate && wallet.openingDate === exclusiveDate)
+          ? Number(wallet.initial) || 0
+          : 0),
+      0,
+    );
+
+    for (const transaction of state.transactions || []) {
+      if (transaction.date >= exclusiveDate) continue;
+      if (transaction.type === "income") balance += Number(transaction.amount) || 0;
+      else if (transaction.type === "expense") balance -= Number(transaction.amount) || 0;
+      else if (transaction.type === "transfer") balance -= Number(transaction.feeAmount) || 0;
+    }
+
+    const walletIds = new Set(wallets.map((wallet) => wallet.id));
+    for (const target of state.targets || []) {
+      for (const contribution of target.contribs || []) {
+        if (contribution.date >= exclusiveDate || !walletIds.has(contribution.walletId)) continue;
+        const amount = Number(contribution.amount) || 0;
+        balance += contribution.type === "out" ? amount : -amount;
+      }
+    }
+
+    return balance;
+  }
+
   function summarizeMonth(state, month) {
     let income = 0;
     let expense = 0;
@@ -86,11 +118,16 @@
     }
 
     const net = income - expense;
+    const [year, monthNumber] = month.split("-").map(Number);
+    const nextMonth = `${monthNumber === 12 ? year + 1 : year}-${String(monthNumber === 12 ? 1 : monthNumber + 1).padStart(2, "0")}-01`;
+    const openingBalance = balanceBeforeDate(state, `${month}-01`, true);
     return {
       key: month,
       income,
       expense,
       net,
+      openingBalance,
+      closingBalance: balanceBeforeDate(state, nextMonth),
       saved,
       count,
       rate: income > 0 ? net / income : null,
@@ -412,7 +449,12 @@
               walletNames.get(transaction.walletId) || "-",
               walletNames.get(transaction.toWalletId) || "-",
             ]
-          : [categoryNames.get(transaction.categoryId) || "Lainnya"];
+          : [
+              categoryNames.get(transaction.categoryId) || "Lainnya",
+              transaction.counterpartyName,
+              transaction.counterpartyBank,
+              transaction.counterpartyAccountLast4,
+            ];
       return {
         transaction,
         searchText: [transaction.note, ...relatedNames].filter(Boolean).join(" ").toLowerCase(),
@@ -435,6 +477,15 @@
 
   function saveTransaction(transactions, form, { createId, isValidDate, now = Date.now }) {
     const amount = Number(String(form.amount).replace(/\D/g, ""));
+    const counterpartyName = String(form.counterpartyName || "")
+      .trim()
+      .slice(0, 40);
+    const counterpartyBank = String(form.counterpartyBank || "")
+      .trim()
+      .slice(0, 40);
+    const counterpartyAccountLast4 = String(form.counterpartyAccountLast4 || "")
+      .replace(/\D/g, "")
+      .slice(0, 4);
     if (!amount) return { error: "Isi nominalnya dulu ya." };
     if (!form.walletId) return { error: "Tambahkan dompet di Pengaturan." };
     if (!isValidDate(form.date)) return { error: "Pilih tanggal." };
@@ -466,6 +517,9 @@
         walletId: form.walletId,
         date: form.date,
         note: (form.note || "").trim(),
+        ...(counterpartyName ? { counterpartyName } : {}),
+        ...(counterpartyBank ? { counterpartyBank } : {}),
+        ...(counterpartyAccountLast4 ? { counterpartyAccountLast4 } : {}),
         ts: form.ts || now(),
       };
     }

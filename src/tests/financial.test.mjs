@@ -94,11 +94,76 @@ test("monthly summary includes only matching month and signs target withdrawals"
       income: 5_100_000,
       expense: 3_500_000,
       net: 1_600_000,
+      openingBalance: 2_100_000,
+      closingBalance: 3_700_000,
       saved: 400_000,
       count: 6,
       rate: 1_600_000 / 5_100_000,
     },
   );
+});
+
+test("monthly balances carry tracked wallet funds forward without changing monthly net", () => {
+  const state = {
+    wallets: [
+      { id: "cash", initial: 1_000 },
+      { id: "bank", initial: 500 },
+    ],
+    transactions: [
+      { type: "income", amount: 400, walletId: "cash", date: "2026-09-30" },
+      { type: "income", amount: 1_000, walletId: "cash", date: "2026-10-01" },
+      { type: "expense", amount: 200, walletId: "cash", date: "2026-10-02" },
+      {
+        type: "transfer",
+        amount: 300,
+        feeAmount: 10,
+        walletId: "cash",
+        toWalletId: "bank",
+        date: "2026-10-03",
+      },
+      { type: "expense", amount: 500, walletId: "bank", date: "2026-11-01" },
+    ],
+    targets: [
+      {
+        contribs: [
+          { type: "in", amount: 100, walletId: "cash", date: "2026-10-04" },
+          { type: "out", amount: 20, walletId: "bank", date: "2026-10-05" },
+          { type: "in", amount: 300, walletId: "", date: "2026-10-06" },
+        ],
+      },
+    ],
+  };
+
+  const october = finance.summarizeMonth(state, "2026-10");
+  const november = finance.summarizeMonth(state, "2026-11");
+
+  assert.equal(october.openingBalance, 1_900);
+  assert.equal(october.net, 410);
+  assert.equal(october.closingBalance, 2_610);
+  assert.equal(november.openingBalance, october.closingBalance);
+  assert.equal(november.net, -500);
+  assert.equal(november.closingBalance, 2_110);
+});
+
+test("wallet opening balance affects history only from its configured effective date", () => {
+  const state = {
+    wallets: [
+      { id: "legacy", initial: 500 },
+      { id: "new", initial: 1_000, openingDate: "2026-10-15" },
+    ],
+    transactions: [],
+    targets: [],
+  };
+
+  const september = finance.summarizeMonth(state, "2026-09");
+  const october = finance.summarizeMonth(state, "2026-10");
+  const november = finance.summarizeMonth(state, "2026-11");
+
+  assert.equal(september.openingBalance, 500);
+  assert.equal(september.closingBalance, 500);
+  assert.equal(october.openingBalance, 500);
+  assert.equal(october.closingBalance, 1_500);
+  assert.equal(november.openingBalance, 1_500);
 });
 
 test("monthly budget remaining includes net target contributions for the selected month", () => {
@@ -374,7 +439,13 @@ test("target deposits appear in ranked expenses with their target name", () => {
 test("transaction search index matches notes, categories, transfer wallets, and type filters", () => {
   const state = createState();
   const transactions = [
-    ...state.transactions.slice(0, 2),
+    {
+      ...state.transactions[0],
+      counterpartyName: "Nadia",
+      counterpartyBank: "Bank BCA",
+      counterpartyAccountLast4: "1234",
+    },
+    state.transactions[1],
     {
       id: "transfer",
       type: "transfer",
@@ -393,6 +464,14 @@ test("transaction search index matches notes, categories, transfer wallets, and 
   assert.deepEqual(
     Array.from(finance.filterIndexedTransactions(index, "  MAKAN "), (item) => item.id),
     ["expense-oct-1"],
+  );
+  assert.deepEqual(
+    Array.from(finance.filterIndexedTransactions(index, "nadia"), (item) => item.id),
+    ["income-oct"],
+  );
+  assert.deepEqual(
+    Array.from(finance.filterIndexedTransactions(index, "1234"), (item) => item.id),
+    ["income-oct"],
   );
   assert.deepEqual(
     Array.from(finance.filterIndexedTransactions(index, "gaji", "income"), (item) => item.id),
@@ -455,6 +534,37 @@ test("transaction creation validates fields and leaves existing transactions unt
   assert.equal(result.isEdit, false);
   assert.equal(existing.length, 1);
   assert.equal(result.transactions.length, 2);
+});
+
+test("counterparty details are saved as optional transaction metadata", () => {
+  const result = finance.saveTransaction(
+    [],
+    {
+      type: "income",
+      amount: "Rp 12.500",
+      categoryId: "salary",
+      walletId: "bank",
+      date: "2026-10-22",
+      counterpartyName: "  PT Contoh  ",
+      counterpartyBank: "  Bank Nusantara  ",
+      counterpartyAccountLast4: "12a34567",
+    },
+    {
+      createId: () => "income-id",
+      isValidDate: () => true,
+    },
+  );
+
+  assert.equal(result.transaction.counterpartyName, "PT Contoh");
+  assert.equal(result.transaction.counterpartyBank, "Bank Nusantara");
+  assert.equal(result.transaction.counterpartyAccountLast4, "1234");
+  assert.equal(
+    finance.walletBalance(
+      { transactions: [result.transaction], targets: [] },
+      { id: "bank", initial: 0 },
+    ),
+    12_500,
+  );
 });
 
 test("transaction edit replaces only the matching record and preserves its identity and timestamp", () => {
@@ -549,6 +659,8 @@ test("wallet transfers move balances without appearing as income or expense", ()
       income: 0,
       expense: 10,
       net: -10,
+      openingBalance: 1_200,
+      closingBalance: 1_190,
       saved: 0,
       count: 1,
       rate: null,
